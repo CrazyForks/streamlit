@@ -132,6 +132,16 @@ export class ForwardMsgCache {
       return
     }
 
+    if (!msg.hash) {
+      // We don't cache message if the hash is not set. However, this
+      // should never happen, so we log an error and return.
+      LOG.error(
+        "ForwardMsg has no hash. This is not expected to happen, please report this bug.",
+        msg
+      )
+      return
+    }
+
     if (this.getCachedMessage(msg.hash, true) !== undefined) {
       // We've already cached this message; don't need to do
       // anything more. (Using getCachedMessage() here ensures
@@ -140,7 +150,7 @@ export class ForwardMsgCache {
       return
     }
 
-    LOG.info(`Caching ForwardMsg [hash=${msg.hash}]`)
+    LOG.info(`Caching ForwardMsg [hash=${msg.hash}]`, msg)
     this.messages.set(
       msg.hash,
       new CacheEntry(encodedMsg, this.scriptRunCount)
