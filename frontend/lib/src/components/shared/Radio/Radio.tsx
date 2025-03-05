@@ -64,6 +64,8 @@ function Radio({
       return
     }
 
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setValue(defaultValue ?? null)
 
     // Exclude value from the dependency list on purpose to avoid a loop.
@@ -127,6 +129,8 @@ function Radio({
       >
         {cleanedOptions.map((option: string, index: number) => (
           <UIRadio
+            // TODO: Update to match React best practices
+            // eslint-disable-next-line @eslint-react/no-array-index-key
             key={index}
             value={index.toString()}
             overrides={{

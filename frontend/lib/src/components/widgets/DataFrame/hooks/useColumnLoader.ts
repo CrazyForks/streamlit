@@ -294,6 +294,8 @@ function useColumnLoader(
 
   // Resync state whenever the parsed column config from the proto changes:
   React.useEffect(() => {
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setColumnConfigMapping(parsedColumnConfig)
   }, [parsedColumnConfig])
 

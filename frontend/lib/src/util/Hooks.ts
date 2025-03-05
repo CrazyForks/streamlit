@@ -44,6 +44,8 @@ export const useIsOverflowing = (
     if (current) {
       const { scrollHeight, clientHeight } = current
 
+      // TODO: Update to match React best practices
+      // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
       setIsOverflowing(scrollHeight > clientHeight)
     }
   }, [current])

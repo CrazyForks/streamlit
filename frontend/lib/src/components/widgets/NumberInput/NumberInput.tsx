@@ -94,11 +94,15 @@ const NumberInput: React.FC<Props> = ({
     elementRef,
   } = useResizeObserver(useMemo(() => ["width"], []))
 
+  // TODO: Update to match React best practices
+  // eslint-disable-next-line @eslint-react/hooks-extra/prefer-use-state-lazy-initialization
   const [step, setStep] = useState<number>(getStep(element))
   const initialValue = getInitialValue({ element, widgetMgr })
   const [dirty, setDirty] = useState(false)
   const [value, setValue] = useState<number | null>(initialValue)
   const [formattedValue, setFormattedValue] = useState<string | null>(
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line @eslint-react/hooks-extra/prefer-use-state-lazy-initialization
     formatValue({ value: initialValue, ...element, step })
   )
   const [isFocused, setIsFocused] = useState(false)
@@ -119,6 +123,8 @@ const NumberInput: React.FC<Props> = ({
 
   // Update the step if the props change
   useEffect(() => {
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setStep(getStep({ step: element.step, dataType: element.dataType }))
   }, [element.dataType, element.step])
 
@@ -150,8 +156,14 @@ const NumberInput: React.FC<Props> = ({
             throw new Error("Invalid data type")
         }
 
+        // TODO: Update to match React best practices
+        // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
         setDirty(false)
+        // TODO: Update to match React best practices
+        // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
         setValue(newValue)
+        // TODO: Update to match React best practices
+        // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
         setFormattedValue(
           formatValue({
             value: newValue,
@@ -191,7 +203,11 @@ const NumberInput: React.FC<Props> = ({
   const updateFromProtobuf = useCallback((): void => {
     const { value } = element
     element.setValue = false
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setValue(value ?? null)
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setFormattedValue(formatValue({ value: value ?? null, ...element, step }))
     commitValue({ value: value ?? null, source: { fromUi: false } })
   }, [element, step, commitValue])

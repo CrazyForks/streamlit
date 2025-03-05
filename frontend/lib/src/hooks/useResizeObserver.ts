@@ -87,6 +87,8 @@ export const useResizeObserver = <T extends HTMLDivElement>(
       return
     }
 
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setValues(getValues())
 
     let frameId: number

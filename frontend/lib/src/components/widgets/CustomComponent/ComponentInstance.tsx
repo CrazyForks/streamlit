@@ -211,6 +211,8 @@ function ComponentInstance(props: Props): ReactElement {
   // my_custom_component(height=100). undefined means no explicit height
   // was specified, but will be set to the default height of 0.
   const [frameHeight, setFrameHeight] = useState<number | undefined>(
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line @eslint-react/hooks-extra/prefer-use-state-lazy-initialization
     isNaN(parsedNewArgs.height) ? undefined : parsedNewArgs.height
   )
 
@@ -228,6 +230,7 @@ function ComponentInstance(props: Props): ReactElement {
   const clearTimeoutWarningElement = useTimeout(() => {
     // To keep behavior the same as before introducing `createRoot` and after,
     // we ensure that the state updates are flushed immediately.
+    // eslint-disable-next-line @eslint-react/dom/no-flush-sync
     flushSync(() => {
       setIsReadyTimeout(true)
     })
@@ -274,6 +277,7 @@ function ComponentInstance(props: Props): ReactElement {
       iframeRef.current.height = height.toString()
       // To keep behavior the same as before introducing `createRoot` and after,
       // we ensure that the state updates are flushed immediately.
+      // eslint-disable-next-line @eslint-react/dom/no-flush-sync
       flushSync(() => {
         setFrameHeight(height)
       })
@@ -293,6 +297,7 @@ function ComponentInstance(props: Props): ReactElement {
       isReadyRef.current = true
       // To keep behavior the same as before introducing `createRoot` and after,
       // we ensure that the state updates are flushed immediately.
+      // eslint-disable-next-line @eslint-react/dom/no-flush-sync
       flushSync(() => {
         setIsReadyTimeout(false)
       })

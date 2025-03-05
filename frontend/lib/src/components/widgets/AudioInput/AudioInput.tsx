@@ -281,6 +281,8 @@ const AudioInput: React.FC<Props> = ({
     })
 
     ws.on("timeupdate", time => {
+      // TODO: Update to match React best practices
+      // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
       setProgressTime(formatTime(time * 1000)) // get from seconds to milliseconds
     })
 
@@ -303,7 +305,11 @@ const AudioInput: React.FC<Props> = ({
       setRecordingTime(formatTime(time))
     })
 
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setWavesurfer(ws)
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setRecordPlugin(rp)
 
     return () => {

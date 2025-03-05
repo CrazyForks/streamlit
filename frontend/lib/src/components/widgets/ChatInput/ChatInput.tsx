@@ -334,8 +334,12 @@ function ChatInput({
     () =>
       // Disable send button if there are files still being uploaded
       files.some(f => f.status.type === "uploading")
-        ? setDirty(false)
-        : setDirty(value !== "" || files.length > 0),
+        ? // TODO: Update to match React best practices
+          // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+          setDirty(false)
+        : // TODO: Update to match React best practices
+          // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+          setDirty(value !== "" || files.length > 0),
     [files, value]
   )
 
@@ -346,6 +350,8 @@ function ChatInput({
       // eslint-disable-next-line react-compiler/react-compiler
       element.setValue = false
       const val = element.value || ""
+      // TODO: Update to match React best practices
+      // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
       setValue(val)
     }
   }, [element])

@@ -93,6 +93,8 @@ export const DeckGlJsonChart: FC<DeckGLProps> = props => {
     // HACK: Load layers a little after loading the map, to hack around a bug
     // where HexagonLayers were not drawing on first load but did load when the
     // script got re-executed.
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setIsInitialized(true)
   }, [])
 

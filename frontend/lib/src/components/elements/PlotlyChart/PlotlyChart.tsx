@@ -202,6 +202,8 @@ export function PlotlyChart({
 
   useEffect(() => {
     // If the theme changes, we need to reapply the theming to the figure
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setPlotlyFigure((prevState: PlotlyFigureType) => {
       return applyTheming(prevState, element.theme, theme)
     })
@@ -255,6 +257,8 @@ export function PlotlyChart({
       }
     }
 
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setPlotlyFigure((prevState: PlotlyFigureType) => {
       if (
         prevState.layout.clickmode === updatedClickMode &&
@@ -435,6 +439,8 @@ export function PlotlyChart({
     }
 
     if (plotlyFigure.layout?.clickmode !== clickmode) {
+      // TODO: Update to match React best practices
+      // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
       setPlotlyFigure((prevFigure: PlotlyFigureType) => {
         return {
           ...prevFigure,

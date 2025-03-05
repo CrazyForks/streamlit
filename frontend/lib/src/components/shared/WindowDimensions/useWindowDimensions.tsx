@@ -43,6 +43,8 @@ export const useWindowDimensions = (): WindowDimensions => {
   }, [theme.sizes.fullScreenHeaderHeight, theme.spacing.md])
 
   const updateWindowDimensions = useCallback(() => {
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setWindowDimensions(getWindowDimensions())
   }, [getWindowDimensions])
 

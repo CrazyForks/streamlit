@@ -104,6 +104,8 @@ function Slider({
   // When resetting a form, `value` will change so we need to change `uiValue`
   // to match.
   useEffect(() => {
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setUiValue(value)
   }, [value])
 
@@ -155,6 +157,7 @@ function Slider({
       const { $thumbIndex } = props
       const thumbIndex = $thumbIndex || 0
       thumbRefs[thumbIndex] = ref as React.MutableRefObject<HTMLDivElement>
+      // eslint-disable-next-line @eslint-react/no-create-ref
       thumbValueRefs[thumbIndex] ||= React.createRef<HTMLDivElement>()
 
       const passThrough = pick(props, [

@@ -38,6 +38,8 @@ const Dialog: React.FC<React.PropsWithChildren<Props>> = ({
   useEffect(() => {
     // Only apply the open state if it was actually set in the proto.
     if (notNullOrUndefined(initialIsOpen)) {
+      // TODO: Update to match React best practices
+      // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
       setIsOpen(initialIsOpen)
     }
 

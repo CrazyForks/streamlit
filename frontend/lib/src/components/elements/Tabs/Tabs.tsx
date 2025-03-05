@@ -62,7 +62,11 @@ function Tabs(props: Readonly<TabProps>): ReactElement {
   useEffect(() => {
     const newTabKey = allTabLabels.indexOf(activeTabName)
     if (newTabKey === -1) {
+      // TODO: Update to match React best practices
+      // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
       setActiveTabKey(0)
+      // TODO: Update to match React best practices
+      // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
       setActiveTabName(allTabLabels[0])
     }
     // TODO: Update to match React best practices
@@ -73,16 +77,26 @@ function Tabs(props: Readonly<TabProps>): ReactElement {
   useEffect(() => {
     if (tabListRef.current) {
       const { scrollWidth, clientWidth } = tabListRef.current
+      // TODO: Update to match React best practices
+      // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
       setIsOverflowing(scrollWidth > clientWidth)
     }
 
     // If tab # changes, match the selected tab label, otherwise default to first tab
     const newTabKey = allTabLabels.indexOf(activeTabName)
     if (newTabKey !== -1) {
+      // TODO: Update to match React best practices
+      // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
       setActiveTabKey(newTabKey)
+      // TODO: Update to match React best practices
+      // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
       setActiveTabName(allTabLabels[newTabKey])
     } else {
+      // TODO: Update to match React best practices
+      // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
       setActiveTabKey(0)
+      // TODO: Update to match React best practices
+      // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
       setActiveTabName(allTabLabels[0])
     }
 
@@ -185,6 +199,8 @@ function Tabs(props: Readonly<TabProps>): ReactElement {
                   isLabel
                 />
               }
+              // TODO: Update to match React best practices
+              // eslint-disable-next-line @eslint-react/no-array-index-key
               key={index}
               disabled={widgetsDisabled}
               overrides={{

@@ -400,6 +400,7 @@ class FileUploader extends React.PureComponent<InnerProps, State> {
   private addFile = (file: UploadFileInfo): void => {
     // Using flushSync here because we need the state to be immediately updated
     // before any subsequent file upload operations occur.
+    // eslint-disable-next-line @eslint-react/dom/no-flush-sync
     flushSync(() => {
       this.setState(state => ({ files: [...state.files, file] }))
     })
@@ -409,6 +410,7 @@ class FileUploader extends React.PureComponent<InnerProps, State> {
   private addFiles = (files: UploadFileInfo[]): void => {
     // Using flushSync here because we need the state to be immediately updated
     // before any subsequent file upload operations occur.
+    // eslint-disable-next-line @eslint-react/dom/no-flush-sync
     flushSync(() => {
       this.setState(state => ({ files: [...state.files, ...files] }))
     })
@@ -418,6 +420,7 @@ class FileUploader extends React.PureComponent<InnerProps, State> {
   private removeFile = (idToRemove: number): void => {
     // Using flushSync here because we need the state to be immediately updated
     // before any subsequent file upload operations occur.
+    // eslint-disable-next-line @eslint-react/dom/no-flush-sync
     flushSync(() => {
       this.setState(state => ({
         files: state.files.filter(file => file.id !== idToRemove),
@@ -436,6 +439,7 @@ class FileUploader extends React.PureComponent<InnerProps, State> {
   private updateFile = (curFileId: number, newFile: UploadFileInfo): void => {
     // Using flushSync here because we need the state to be immediately updated
     // before any subsequent file upload operations occur.
+    // eslint-disable-next-line @eslint-react/dom/no-flush-sync
     flushSync(() => {
       this.setState(curState => {
         return {
@@ -480,6 +484,7 @@ class FileUploader extends React.PureComponent<InnerProps, State> {
   private onFormCleared = (): void => {
     // Using flushSync here because we need the state to be immediately updated
     // before any subsequent file upload operations occur.
+    // eslint-disable-next-line @eslint-react/dom/no-flush-sync
     flushSync(() => {
       this.setState({ files: [] }, () => {
         const newWidgetValue = this.createWidgetValue()

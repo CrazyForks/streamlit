@@ -42,6 +42,8 @@ const withPagination = (
   }: Props): ReactElement => {
     const [currentPage, updateCurrentPage] = useState<number>(0)
     const [totalPages, updateTotalPages] = useState<number>(
+      // TODO: Update to match React best practices
+      // eslint-disable-next-line @eslint-react/hooks-extra/prefer-use-state-lazy-initialization
       calculateNumPages(items, pageSize)
     )
 
@@ -49,13 +51,19 @@ const withPagination = (
 
     useEffect(() => {
       if (prevItems && prevItems.length !== items.length) {
+        // TODO: Update to match React best practices
+        // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
         updateTotalPages(calculateNumPages(items, pageSize))
       }
       if (prevItems && prevItems.length < items.length) {
         if (resetOnAdd) {
+          // TODO: Update to match React best practices
+          // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
           updateCurrentPage(0)
         }
       } else if (currentPage + 1 >= totalPages) {
+        // TODO: Update to match React best practices
+        // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
         updateCurrentPage(totalPages - 1)
       }
     }, [items, currentPage, pageSize, prevItems, resetOnAdd, totalPages])

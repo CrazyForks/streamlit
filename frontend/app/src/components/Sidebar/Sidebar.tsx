@@ -130,6 +130,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   )
 
   useEffect(() => {
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setCollapsedSidebar(
       shouldCollapse(initialSidebarState, mediumBreakpointPx)
     )

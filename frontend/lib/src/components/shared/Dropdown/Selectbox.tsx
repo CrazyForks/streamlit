@@ -90,6 +90,8 @@ const Selectbox: React.FC<Props> = ({
   // Update the value whenever the value provided by the props changes
   // TODO: Find a better way to handle this to prevent unneeded re-renders
   useEffect(() => {
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setValue(propValue)
   }, [propValue])
 

@@ -220,6 +220,8 @@ function DataFrame({
 
   React.useEffect(() => {
     editingState.current = new EditingState(originalNumRows)
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setNumRows(editingState.current.getNumRows())
   }, [originalNumRows])
 
@@ -233,6 +235,8 @@ function DataFrame({
   // Update the column order if the element.columnOrder value changes
   // e.g. if the user has applied changes to the column order in the code.
   React.useEffect(() => {
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setColumnOrder(element.columnOrder)
 
     // eslint-disable-next-line react-compiler/react-compiler
@@ -273,6 +277,8 @@ function DataFrame({
       }
 
       editingState.current.fromJson(initialWidgetValue, originalColumns)
+      // TODO: Update to match React best practices
+      // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
       setNumRows(editingState.current.getNumRows())
     },
     // We only want to run this effect once during the initial component load
@@ -675,6 +681,8 @@ function DataFrame({
   // Hide the column visibility menu if all columns are visible:
   useEffect(() => {
     if (allColumns.length == columns.length) {
+      // TODO: Update to match React best practices
+      // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
       setShowColumnVisibilityMenu(false)
     }
   }, [allColumns.length, columns.length])

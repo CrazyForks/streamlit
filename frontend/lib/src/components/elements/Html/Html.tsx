@@ -61,11 +61,15 @@ const sanitizeString = (html: string): string => {
  */
 function Html({ element }: Readonly<HtmlProps>): ReactElement {
   const { body } = element
+  // TODO: Update to match React best practices
+  // eslint-disable-next-line @eslint-react/hooks-extra/prefer-use-state-lazy-initialization
   const [sanitizedHtml, setSanitizedHtml] = useState(sanitizeString(body))
   const htmlRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     if (sanitizeString(body) !== sanitizedHtml) {
+      // TODO: Update to match React best practices
+      // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
       setSanitizedHtml(sanitizeString(body))
     }
     // TODO: Update to match React best practices
@@ -90,6 +94,8 @@ function Html({ element }: Readonly<HtmlProps>): ReactElement {
           className="stHtml"
           data-testid="stHtml"
           ref={htmlRef}
+          // TODO: Update to match React best practices
+          // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
           dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
         />
       )}

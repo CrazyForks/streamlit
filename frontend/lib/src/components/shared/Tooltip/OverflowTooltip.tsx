@@ -46,6 +46,8 @@ function OverflowTooltip({
       ? childRef.current.offsetWidth < childRef.current.scrollWidth
       : false
     if (newAllowTooltip !== allowTooltip) {
+      // TODO: Update to match React best practices
+      // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
       setAllowTooltip(newAllowTooltip)
     }
   }, [children, allowTooltip])

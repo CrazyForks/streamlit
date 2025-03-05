@@ -107,8 +107,12 @@ export function useBasicWidgetClientState<
   // widget manager to update its state too.
   useEffect(() => {
     if (isNullOrUndefined(nextValueWithSource)) return
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setNextValueWithSource(null) // Clear "event".
 
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setCurrentValue(nextValueWithSource.value)
     updateWidgetMgrState(element, widgetMgr, nextValueWithSource, fragmentId)
   }, [

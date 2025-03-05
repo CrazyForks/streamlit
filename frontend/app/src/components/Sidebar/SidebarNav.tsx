@@ -151,6 +151,8 @@ const SidebarNav = ({
       window.localStorage.getItem("sidebarNavState") === "expanded"
 
     if (!expanded && (expandSidebarNav || cachedSidebarNavExpanded)) {
+      // TODO: Update to match React best practices
+      // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
       setExpanded(true)
     }
   }, [expanded, expandSidebarNav])

@@ -90,6 +90,8 @@ const BaseColorPicker = (props: BaseColorPickerProps): React.ReactElement => {
 
   // Reset the value when the prop value changes
   React.useEffect(() => {
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setValue(propValue)
   }, [propValue])
 
