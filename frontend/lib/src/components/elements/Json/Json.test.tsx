@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,12 @@
 
 import React from "react"
 
-import "@testing-library/jest-dom"
 import { screen } from "@testing-library/react"
 
-import { render } from "@streamlit/lib/src/test_util"
-import { Json as JsonProto } from "@streamlit/lib/src/proto"
-import * as themeUtils from "@streamlit/lib/src/theme/utils"
+import { Json as JsonProto } from "@streamlit/protobuf"
+
+import { render } from "~lib/test_util"
+import * as getColors from "~lib/theme/getColors"
 
 import Json, { JsonProps } from "./Json"
 
@@ -33,12 +33,11 @@ const getProps = (elementProps: Partial<JsonProto> = {}): JsonProps => ({
       '  "json": "structure" }',
     ...elementProps,
   }),
-  width: 100,
 })
 
 describe("JSON element", () => {
   afterEach(() => {
-    jest.restoreAllMocks()
+    vi.restoreAllMocks()
   })
 
   it("renders json as expected", () => {
@@ -69,7 +68,7 @@ describe("JSON element", () => {
     it("picks a reasonable theme when the background is light", () => {
       // <Json> uses `hasLightBackgroundColor` to test whether our theme
       // is "light" or "dark". Mock the return value for the test.
-      jest.spyOn(themeUtils, "hasLightBackgroundColor").mockReturnValue(true)
+      vi.spyOn(getColors, "hasLightBackgroundColor").mockReturnValue(true)
 
       render(<Json {...getProps()} />)
       // checks resulting json coloration based on theme passed
@@ -79,7 +78,7 @@ describe("JSON element", () => {
     it("picks a reasonable theme when the background is dark", () => {
       // <Json> uses `hasLightBackgroundColor` to test whether our theme
       // is "light" or "dark". Mock the return value for the test.
-      jest.spyOn(themeUtils, "hasLightBackgroundColor").mockReturnValue(false)
+      vi.spyOn(getColors, "hasLightBackgroundColor").mockReturnValue(false)
       render(<Json {...getProps()} />)
       expect(screen.getByText("}")).toHaveStyle("color: rgb(249, 248, 245)")
     })

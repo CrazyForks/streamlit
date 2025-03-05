@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,34 +14,41 @@
  * limitations under the License.
  */
 
-import React, { forwardRef, memo, ReactElement, Ref, useMemo } from "react"
+import React, {
+  forwardRef,
+  memo,
+  ReactElement,
+  Ref,
+  useCallback,
+  useMemo,
+} from "react"
 
 import { useTheme } from "@emotion/react"
 import { ButtonGroup as BasewebButtonGroup, MODE } from "baseui/button-group"
 
-import StreamlitMarkdown from "@streamlit/lib/src/components/shared/StreamlitMarkdown/StreamlitMarkdown"
-import BaseButton, {
-  BaseButtonKind,
-  BaseButtonSize,
-} from "@streamlit/lib/src/components/shared/BaseButton"
-import { DynamicIcon } from "@streamlit/lib/src/components/shared/Icon"
-import { EmotionTheme } from "@streamlit/lib/src/theme"
 import {
   ButtonGroup as ButtonGroupProto,
   LabelVisibilityMessage,
-} from "@streamlit/lib/src/proto"
-import { WidgetStateManager } from "@streamlit/lib/src/WidgetStateManager"
+} from "@streamlit/protobuf"
+
+import BaseButton, {
+  BaseButtonKind,
+  BaseButtonSize,
+  DynamicButtonLabel,
+} from "~lib/components/shared/BaseButton"
+import { EmotionTheme } from "~lib/theme"
+import { WidgetStateManager } from "~lib/WidgetStateManager"
 import {
   StyledWidgetLabelHelpInline,
   WidgetLabel,
-} from "@streamlit/lib/src/components/widgets/BaseWidget"
-import TooltipIcon from "@streamlit/lib/src/components/shared/TooltipIcon"
-import { Placement } from "@streamlit/lib/src/components/shared/Tooltip"
-import { labelVisibilityProtoValueToEnum } from "@streamlit/lib/src/util/utils"
+} from "~lib/components/widgets/BaseWidget"
+import TooltipIcon from "~lib/components/shared/TooltipIcon"
+import { Placement } from "~lib/components/shared/Tooltip"
+import { labelVisibilityProtoValueToEnum } from "~lib/util/utils"
 import {
   useBasicWidgetState,
-  ValueWSource,
-} from "@streamlit/lib/src/useBasicWidgetState"
+  ValueWithSource,
+} from "~lib/hooks/useBasicWidgetState"
 
 export interface Props {
   disabled: boolean
@@ -83,7 +90,7 @@ function getSingleSelection(currentSelection: number[]): number {
 function syncWithWidgetManager(
   element: ButtonGroupProto,
   widgetMgr: WidgetStateManager,
-  valueWithSource: ValueWSource<ButtonGroupValue>,
+  valueWithSource: ValueWithSource<ButtonGroupValue>,
   fragmentId?: string
 ): void {
   widgetMgr.setIntArrayValue(
@@ -104,20 +111,26 @@ export function getContentElement(
       ? BaseButtonKind.PILLS
       : style === ButtonGroupProto.Style.BORDERLESS
       ? BaseButtonKind.BORDERLESS_ICON
-      : BaseButtonKind.SEGMENT
+      : BaseButtonKind.SEGMENTED_CONTROL
   const size =
     style === ButtonGroupProto.Style.BORDERLESS
       ? BaseButtonSize.XSMALL
       : BaseButtonSize.MEDIUM
 
+  // Use smaller font if kind is pills or segmented control
+  const useSmallerFont =
+    kind === BaseButtonKind.PILLS || kind === BaseButtonKind.SEGMENTED_CONTROL
+
   const iconSize = style === ButtonGroupProto.Style.BORDERLESS ? "lg" : "base"
 
   return {
     element: (
-      <>
-        {icon && <DynamicIcon size={iconSize} iconValue={icon} />}
-        {content && <StreamlitMarkdown source={content} allowHTML={false} />}
-      </>
+      <DynamicButtonLabel
+        icon={icon}
+        label={content}
+        iconSize={iconSize}
+        useSmallerFont={useSmallerFont}
+      />
     ),
     kind: kind,
     size: size,
@@ -165,6 +178,42 @@ function getButtonKindAndSize(
   }
 
   return buttonKind
+}
+
+function getButtonGroupOverridesStyle(
+  style: ButtonGroupProto.Style,
+  spacing: EmotionTheme["spacing"]
+): Record<string, any> {
+  const baseStyle = { flexWrap: "wrap", maxWidth: "fit-content" }
+
+  switch (style) {
+    case ButtonGroupProto.Style.BORDERLESS:
+      return {
+        ...baseStyle,
+        columnGap: spacing.threeXS,
+        rowGap: spacing.threeXS,
+      }
+    case ButtonGroupProto.Style.PILLS:
+      return {
+        ...baseStyle,
+        columnGap: spacing.twoXS,
+        rowGap: spacing.twoXS,
+      }
+    case ButtonGroupProto.Style.SEGMENTED_CONTROL:
+      return {
+        ...baseStyle,
+        columnGap: spacing.none,
+        rowGap: spacing.twoXS,
+        // Adding an empty pseudo-element after the last button in the group.
+        // This will make buttons only as big as needed without stretching to the whole container width (aka let them 'hug' to the side)
+        "::after": {
+          content: "''",
+          flex: 10000,
+        },
+      }
+    default:
+      return baseStyle
+  }
 }
 
 function createOptionChild(
@@ -248,7 +297,7 @@ function ButtonGroup(props: Readonly<Props>): ReactElement {
   } = element
   const theme: EmotionTheme = useTheme()
 
-  const [value, setValueWSource] = useBasicWidgetState<
+  const [value, setValueWithSource] = useBasicWidgetState<
     ButtonGroupValue,
     ButtonGroupProto
   >({
@@ -266,7 +315,7 @@ function ButtonGroup(props: Readonly<Props>): ReactElement {
     index: number
   ): void => {
     const newSelected = handleSelection(clickMode, index, value)
-    setValueWSource({ value: newSelected, fromUi: true })
+    setValueWithSource({ value: newSelected, fromUi: true })
   }
 
   let mode = undefined
@@ -292,10 +341,6 @@ function ButtonGroup(props: Readonly<Props>): ReactElement {
     [clickMode, options, selectionVisualization, style, value]
   )
 
-  const gap =
-    style === ButtonGroupProto.Style.BORDERLESS
-      ? theme.spacing.threeXS
-      : theme.spacing.twoXS
   return (
     <div className="stButtonGroup" data-testid="stButtonGroup">
       <WidgetLabel
@@ -323,10 +368,10 @@ function ButtonGroup(props: Readonly<Props>): ReactElement {
         }
         overrides={{
           Root: {
-            style: {
-              flexWrap: "wrap",
-              gap: gap,
-            },
+            style: useCallback(
+              () => getButtonGroupOverridesStyle(style, theme.spacing),
+              [style, theme.spacing]
+            ),
           },
         }}
       >

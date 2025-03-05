@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import React, { ReactElement, ReactNode } from "react"
 import { KIND, Notification } from "baseui/notification"
 import { useTheme } from "@emotion/react"
 
-import { EmotionTheme } from "@streamlit/lib/src/theme"
+import { EmotionTheme } from "~lib/theme"
 
 import { StyledAlertContent } from "./styled-components"
 
@@ -91,6 +91,10 @@ export default function AlertContainer({
             borderBottomRightRadius: theme.radii.default,
             borderTopLeftRadius: theme.radii.default,
             borderBottomLeftRadius: theme.radii.default,
+            paddingTop: theme.spacing.lg,
+            paddingBottom: theme.spacing.lg,
+            paddingRight: theme.spacing.lg,
+            paddingLeft: theme.spacing.lg,
           },
           props: {
             "data-testid": "stAlertContainer",
@@ -100,7 +104,7 @@ export default function AlertContainer({
         InnerContainer: {
           style: {
             width: "100%",
-            lineHeight: theme.lineHeights.alert,
+            lineHeight: theme.lineHeights.small,
           },
         },
       }}

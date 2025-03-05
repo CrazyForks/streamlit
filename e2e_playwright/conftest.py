@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ from io import BytesIO
 from pathlib import Path
 from random import randint
 from tempfile import TemporaryFile
-from typing import TYPE_CHECKING, Any, Callable, Generator, Literal, Protocol
+from typing import TYPE_CHECKING, Any, Callable, Literal, Protocol
 from urllib import parse
 
 import pytest
@@ -49,8 +49,27 @@ from playwright.sync_api import (
 )
 from pytest import FixtureRequest
 
+from e2e_playwright.shared.git_utils import get_git_root
+from e2e_playwright.shared.performance import (
+    is_supported_browser,
+    measure_performance,
+    start_capture_traces,
+)
+
 if TYPE_CHECKING:
+    from collections.abc import Generator
     from types import ModuleType
+
+
+# Used for static app testing
+class StaticPage(Page):
+    pass
+
+
+def pytest_configure(config: pytest.Config):
+    config.addinivalue_line(
+        "markers", "no_perf: mark test to not use performance profiling"
+    )
 
 
 def reorder_early_fixtures(metafunc: pytest.Metafunc):
@@ -200,6 +219,9 @@ def wait_for_app_server_to_start(port: int, timeout: int = 5) -> bool:
     return True
 
 
+# region Fixtures
+
+
 @pytest.fixture(scope="module")
 def app_port(worker_id: str) -> int:
     """Fixture that returns an available port on localhost."""
@@ -212,9 +234,17 @@ def app_port(worker_id: str) -> int:
     return find_available_port()
 
 
+@pytest.fixture(scope="module")
+def app_server_extra_args() -> list[str]:
+    """Fixture that returns extra arguments to pass to the Streamlit app server."""
+    return []
+
+
 @pytest.fixture(scope="module", autouse=True)
 def app_server(
-    app_port: int, request: FixtureRequest
+    app_port: int,
+    app_server_extra_args: list[str],
+    request: FixtureRequest,
 ) -> Generator[AsyncSubprocess, None, None]:
     """Fixture that starts and stops the Streamlit app server."""
     streamlit_proc = AsyncSubprocess(
@@ -236,23 +266,40 @@ def app_server(
             "none",
             "--server.enableStaticServing",
             "true",
+            *app_server_extra_args,
         ],
         cwd=".",
     )
     streamlit_proc.start()
     if not wait_for_app_server_to_start(app_port):
         streamlit_stdout = streamlit_proc.terminate()
-        print(streamlit_stdout)
+        print(streamlit_stdout, flush=True)
         raise RuntimeError("Unable to start Streamlit app")
     yield streamlit_proc
     streamlit_stdout = streamlit_proc.terminate()
-    print(streamlit_stdout)
+    print(streamlit_stdout, flush=True)
 
 
 @pytest.fixture(scope="function")
 def app(page: Page, app_port: int) -> Page:
     """Fixture that opens the app."""
     page.goto(f"http://localhost:{app_port}/")
+    start_capture_traces(page)
+    wait_for_app_loaded(page)
+    return page
+
+
+@pytest.fixture(scope="function")
+def static_app(page: Page, app_port: int, request) -> Page:
+    """Fixture that opens the app."""
+    query_param = request.node.get_closest_marker("query_param")
+    query_string = query_param.args[0] if query_param else ""
+
+    # Indicate this is a StaticPage
+    page.__class__ = StaticPage
+
+    page.goto(f"http://localhost:{app_port}/{query_string}")
+    start_capture_traces(page)
     wait_for_app_loaded(page)
     return page
 
@@ -314,6 +361,8 @@ def iframed_app(page: Page, app_port: int) -> IframedPage:
         f"default-src 'none'; worker-src blob:; form-action 'none'; "
         f"connect-src ws://localhost:{app_port}/_stcore/stream "
         f"http://localhost:{app_port}/_stcore/allowed-message-origins "
+        f"http://localhost:{app_port}/_stcore/upload_file/ "
+        f"https://some-prefix.com/somethingelse/_stcore/upload_file/ "
         f"http://localhost:{app_port}/_stcore/host-config "
         f"http://localhost:{app_port}/_stcore/health; script-src 'unsafe-inline' "
         f"'unsafe-eval' {app_url}/static/js/; style-src 'unsafe-inline' "
@@ -349,11 +398,13 @@ def iframed_app(page: Page, app_port: int) -> IframedPage:
                 <body style="height: 100%;">
                     <iframe
                         src={src}
-                        id={_iframe_element_attrs.element_id
-                            if _iframe_element_attrs.element_id
-                            else ""}
+                        id={
+                _iframe_element_attrs.element_id
+                if _iframe_element_attrs.element_id
+                else ""
+            }
                         title="Iframed Streamlit App"
-                        allow="clipboard-write;"
+                        allow="clipboard-write; microphone;"
                         sandbox="allow-popups allow-same-origin allow-scripts allow-downloads"
                         width="100%"
                     >
@@ -472,6 +523,7 @@ def app_theme(request) -> str:
 def themed_app(page: Page, app_port: int, app_theme: str) -> Page:
     """Fixture that opens the app with the given theme."""
     page.goto(f"http://localhost:{app_port}/?embed_options={app_theme}")
+    start_capture_traces(page)
     wait_for_app_loaded(page)
     return page
 
@@ -504,6 +556,42 @@ class ImageCompareFunction(Protocol):
         """
 
 
+@pytest.fixture(scope="session", autouse=True)
+def delete_output_dir(pytestconfig: Any) -> None:
+    # Overwriting the default delete_output_dir fixture from pytest-playwright:
+    # There seems to be a bug with the combination of pytest-playwright, xdist,
+    # and pytest-rerunfailures where the output dir is deleted when it shouldn't be.
+    # To prevent this issue, we are not deleting the output dir when running with
+    # reruns and xdist.
+
+    uses_xdist = (
+        pytestconfig.getoption("workerinput", None) or os.getenv("PYTEST_XDIST_WORKER"),
+    )
+    uses_reruns = pytestconfig.getoption("reruns", None)
+
+    if not (uses_xdist and uses_reruns):
+        # Delete the output folder. Uses the same logic as the default
+        # delete_output_dir fixture from pytest-playwright:
+        # https://github.com/microsoft/playwright-pytest/blob/fb51327390ccbd3561c1777499934eb88296f1bf/pytest-playwright/pytest_playwright/pytest_playwright.py#L68
+        output_dir = pytestconfig.getoption("--output")
+        if os.path.exists(output_dir):
+            try:
+                shutil.rmtree(output_dir)
+            except FileNotFoundError:
+                # When running in parallel, another thread may have already deleted the files
+                pass
+            except OSError as error:
+                if error.errno != 16:
+                    raise
+                # We failed to remove folder, might be due to the whole folder being mounted inside a container:
+                #   https://github.com/microsoft/playwright/issues/12106
+                #   https://github.com/microsoft/playwright-python/issues/1781
+                # Do a best-effort to remove all files inside of it instead.
+                entries = os.listdir(output_dir)
+                for entry in entries:
+                    shutil.rmtree(entry)
+
+
 @pytest.fixture(scope="session")
 def output_folder(pytestconfig: Any) -> Path:
     """Fixture returning the directory that is used for all test failures information.
@@ -515,7 +603,9 @@ def output_folder(pytestconfig: Any) -> Path:
     - snapshot-updates: This directory contains all the snapshots that got updated in
     the current run based on folder structure used in the main snapshots folder.
     """
-    return Path(pytestconfig.getoption("--output")).resolve()
+    return Path(
+        get_git_root() / "e2e_playwright" / pytestconfig.getoption("--output")
+    ).resolve()
 
 
 @pytest.fixture(scope="function")
@@ -523,12 +613,14 @@ def assert_snapshot(
     request: FixtureRequest, output_folder: Path
 ) -> Generator[ImageCompareFunction, None, None]:
     """Fixture that compares a screenshot with screenshot from a past run."""
-    root_path = Path(os.getcwd()).resolve()
+    root_path = get_git_root()
     platform = str(sys.platform)
     module_name = request.module.__name__.split(".")[-1]
     test_function_name = request.node.originalname
 
-    snapshot_dir: Path = root_path / "__snapshots__" / platform / module_name
+    snapshot_dir: Path = (
+        root_path / "e2e_playwright" / "__snapshots__" / platform / module_name
+    )
 
     module_snapshot_failures_dir: Path = (
         output_folder / "snapshot-tests-failures" / platform / module_name
@@ -640,7 +732,13 @@ def assert_snapshot(
             # Update this in updates folder:
             snapshot_updates_file_path.parent.mkdir(parents=True, exist_ok=True)
             snapshot_updates_file_path.write_bytes(img_bytes)
-            pytest.fail(f"Snapshot matching for {snapshot_file_name} failed: {ex}")
+
+            test_failure_messages.append(
+                f"Snapshot matching for {snapshot_file_name} failed. "
+                f"Expected size: {img_b.size}, actual size: {img_a.size}. "
+                f"Error: {ex}"
+            )
+            return
         total_pixels = img_a.size[0] * img_a.size[1]
         max_diff_pixels = int(image_threshold * total_pixels)
 
@@ -657,22 +755,38 @@ def assert_snapshot(
         img_a.save(f"{test_failures_dir}/actual_{snapshot_file_name}{file_extension}")
         img_b.save(f"{test_failures_dir}/expected_{snapshot_file_name}{file_extension}")
 
-        pytest.fail(
+        test_failure_messages.append(
             f"Snapshot mismatch for {snapshot_file_name} ({mismatch} pixels difference;"
-            f" {mismatch/total_pixels * 100:.2f}%)"
+            f" {mismatch / total_pixels * 100:.2f}%)"
         )
 
     yield compare
 
     if test_failure_messages:
-        pytest.fail("Missing snapshots: \n" + "\n".join(test_failure_messages))
+        pytest.fail(
+            "Missing or mismatched snapshots: \n" + "\n".join(test_failure_messages)
+        )
 
 
-# Public utility methods:
+@pytest.fixture(scope="function", autouse=True)
+def playwright_profiling(request, page: Page):
+    if request.node.get_closest_marker("no_perf") or not is_supported_browser(page):
+        yield
+        return
+
+    with measure_performance(page, test_name=request.node.name):
+        yield
+
+
+# endregion
+
+
+# region Public utility methods
 
 
 def wait_for_app_run(
-    page_or_locator: Page | Locator | FrameLocator, wait_delay: int = 100
+    page_or_locator: Page | Locator | FrameLocator,
+    wait_delay: int = 100,
 ):
     """Wait for the given page to finish running."""
     # Add a little timeout to wait for eventual debounce timeouts used in some widgets.
@@ -687,20 +801,31 @@ def wait_for_app_run(
 
     # if isinstance(page, Page):
     page.wait_for_timeout(155)
-    # Make sure that the websocket connection is established.
-    page_or_locator.locator(
-        "[data-testid='stApp'][data-test-connection-state='CONNECTED']"
-    ).wait_for(
-        timeout=20000,
-        state="attached",
-    )
+
+    if isinstance(page_or_locator, StaticPage):
+        # Check that static connection established.
+        page_or_locator.locator(
+            "[data-testid='stApp'][data-test-connection-state='STATIC_CONNECTED']"
+        ).wait_for(
+            timeout=25000,
+            state="attached",
+        )
+    else:
+        # Make sure that the websocket connection is established.
+        page_or_locator.locator(
+            "[data-testid='stApp'][data-test-connection-state='CONNECTED']"
+        ).wait_for(
+            timeout=25000,
+            state="attached",
+        )
+
     # Wait until we know the script has started. We determine this by checking
     # whether the app is in notRunning state. (The data-test-connection-state attribute
     # goes through the sequence "initial" -> "running" -> "notRunning").
     page_or_locator.locator(
         "[data-testid='stApp'][data-test-script-state='notRunning']"
     ).wait_for(
-        timeout=20000,
+        timeout=25000,
         state="attached",
     )
 
@@ -709,18 +834,12 @@ def wait_for_app_run(
         page.wait_for_timeout(wait_delay)
 
 
-def wait_for_app_loaded(page: Page, embedded: bool = False):
+def wait_for_app_loaded(page: Page):
     """Wait for the app to fully load."""
     # Wait for the app view container to appear:
     page.wait_for_selector(
         "[data-testid='stAppViewContainer']", timeout=30000, state="attached"
     )
-
-    # Wait for the main menu to appear:
-    if not embedded:
-        page.wait_for_selector(
-            "[data-testid='stMainMenu']", timeout=20000, state="attached"
-        )
 
     wait_for_app_run(page)
 
@@ -785,3 +904,6 @@ def wait_until(page: Page, fn: Callable, timeout: int = 5000, interval: int = 10
             if timed_out():
                 raise TimeoutError(timeout_msg)
         page.wait_for_timeout(interval)
+
+
+# endregion

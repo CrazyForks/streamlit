@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,13 @@
 
 from datetime import date, datetime
 
+import numpy as np
+import pandas as pd
+
 import streamlit as st
+
+np.random.seed(0)
+data = np.random.randint(low=0, high=20, size=(20, 3))
 
 w1 = st.sidebar.date_input("Label 1", date(1970, 1, 1))
 st.write("Value 1:", w1)
@@ -29,3 +35,4 @@ y = st.sidebar.text_input("type here")
 with st.sidebar:
     st.header("hello world")
     st.markdown("hello world")
+    st.bar_chart(pd.DataFrame(data, columns=["a", "b", "c"]))

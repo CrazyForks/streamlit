@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,11 @@ import re
 from playwright.sync_api import Page, expect
 
 from e2e_playwright.conftest import ImageCompareFunction
-from e2e_playwright.shared.app_utils import check_top_level_class, get_image
+from e2e_playwright.shared.app_utils import (
+    check_top_level_class,
+    get_element_by_key,
+    get_image,
+)
 
 
 def test_image_display(app: Page):
@@ -57,9 +61,13 @@ def test_image_formats(app: Page):
         get_image(app, "Transparent Black Square.").locator("img")
     ).to_have_attribute("src", re.compile(r"^.*\.png$"))
 
-    expect(get_image(app, "Image from jpg file.").locator("img")).to_have_attribute(
-        "src", re.compile(r"^.*\.jpg$")
-    )
+    expect(
+        get_image(app, "Image from jpg file (str).").locator("img")
+    ).to_have_attribute("src", re.compile(r"^.*\.jpg$"))
+
+    expect(
+        get_image(app, "Image from jpg file (Path).").locator("img")
+    ).to_have_attribute("src", re.compile(r"^.*\.jpg$"))
 
     # GIF:
     expect(get_image(app, "Black Circle as GIF.").locator("img")).to_have_attribute(
@@ -75,17 +83,36 @@ def test_use_column_width_parameter(app: Page, assert_snapshot: ImageCompareFunc
     columns_container.scroll_into_view_if_needed()
     assert_snapshot(columns_container, name="st_image-use_column_width")
 
+    expect(app.get_by_test_id("stMainBlockContainer")).to_contain_text(
+        "The use_column_width parameter has been deprecated and will be removed in a future release. Please utilize the use_container_width parameter instead."
+    )
+
+
+def test_st_image_use_container_width_parameter(
+    app: Page, assert_snapshot: ImageCompareFunction
+):
+    columns_container = app.get_by_test_id("stHorizontalBlock").nth(1)
+    columns_container.scroll_into_view_if_needed()
+    assert_snapshot(columns_container, name="st_image-use_container_width")
+
 
 def test_fullscreen_button_exists(app: Page):
     """Test that element has the fullscreen button."""
-    expect(app.get_by_test_id("StyledFullScreenButton").first).to_be_attached()
+    expect(app.get_by_role("button", name="Fullscreen").first).to_be_attached()
 
 
-def test_image_from_file(app: Page, assert_snapshot: ImageCompareFunction):
-    gif_image = get_image(app, "Image from jpg file.").locator("img")
-    expect(gif_image).to_have_css("width", "200px")
-    expect(gif_image).to_have_attribute("src", re.compile(r"^.*\.jpg$"))
-    assert_snapshot(gif_image, name="st_image-image_from_file")
+def test_image_from_file_str(app: Page, assert_snapshot: ImageCompareFunction):
+    image = get_image(app, "Image from jpg file (str).").locator("img")
+    expect(image).to_have_css("width", "200px")
+    expect(image).to_have_attribute("src", re.compile(r"^.*\.jpg$"))
+    assert_snapshot(image, name="st_image-image_from_file_str")
+
+
+def test_image_from_file_path(app: Page, assert_snapshot: ImageCompareFunction):
+    image = get_image(app, "Image from jpg file (Path).").locator("img")
+    expect(image).to_have_css("width", "200px")
+    expect(image).to_have_attribute("src", re.compile(r"^.*\.jpg$"))
+    assert_snapshot(image, name="st_image-image_from_file_path")
 
 
 def test_gif_image(app: Page, assert_snapshot: ImageCompareFunction):
@@ -168,6 +195,21 @@ def test_image_list(app: Page, assert_snapshot: ImageCompareFunction):
     """Test that st.image can display a list of images."""
     image_list = get_image(app, "Image list")
     assert_snapshot(image_list, name="st_image-image_list")
+
+
+def test_image_list_overflow(app: Page, assert_snapshot: ImageCompareFunction):
+    """Test that st.image can display a list of images."""
+    image_list = get_image(app, "Overflow")
+    assert_snapshot(image_list, name="st_image-image_list_overflow")
+
+
+def test_markdown_caption_support(app: Page, assert_snapshot: ImageCompareFunction):
+    image_element = (
+        get_element_by_key(app, "image_with_markdown_caption")
+        .get_by_test_id("stImage")
+        .first
+    )
+    assert_snapshot(image_element, name="st_image-markdown_caption_support")
 
 
 def test_check_top_level_class(app: Page):

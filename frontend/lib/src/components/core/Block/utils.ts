@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,14 @@
  * limitations under the License.
  */
 
-import { AppNode, BlockNode } from "@streamlit/lib/src/AppNode"
-import { ComponentRegistry } from "@streamlit/lib/src/components/widgets/CustomComponent"
-import { FileUploadClient } from "@streamlit/lib/src/FileUploadClient"
-import { ScriptRunState } from "@streamlit/lib/src/ScriptRunState"
-import { SessionInfo } from "@streamlit/lib/src/SessionInfo"
-import { StreamlitEndpoints } from "@streamlit/lib/src/StreamlitEndpoints"
-import { EmotionTheme, getDividerColors } from "@streamlit/lib/src/theme"
-import { isValidElementId } from "@streamlit/lib/src/util/utils"
-import {
-  FormsData,
-  WidgetStateManager,
-} from "@streamlit/lib/src/WidgetStateManager"
+import { AppNode, BlockNode } from "~lib/AppNode"
+import { ComponentRegistry } from "~lib/components/widgets/CustomComponent"
+import { FileUploadClient } from "~lib/FileUploadClient"
+import { ScriptRunState } from "~lib/ScriptRunState"
+import { StreamlitEndpoints } from "~lib/StreamlitEndpoints"
+import { EmotionTheme, getDividerColors } from "~lib/theme"
+import { isValidElementId } from "~lib/util/utils"
+import { FormsData, WidgetStateManager } from "~lib/WidgetStateManager"
 
 export function shouldComponentBeEnabled(
   elementType: string,
@@ -114,11 +110,6 @@ export interface BaseBlockProps {
   endpoints: StreamlitEndpoints
 
   /**
-   * The app's SessionInfo instance. Exposes session-specific properties.
-   */
-  sessionInfo: SessionInfo
-
-  /**
    * The app's WidgetStateManager instance. Used by all widget elements to
    * store and retrieve widget state. When the user interacts with a widget,
    * the WidgetStateManager initiates the "rerun BackMsg" data flow to kick
@@ -200,6 +191,9 @@ export function getKeyFromId(
     return undefined
   }
 
-  const userKey = elementId.split("-", 3).pop()
+  // Split the elementId by hyphens
+  const parts = elementId.split("-")
+  // Extract all parts after the second hyphen
+  const userKey = parts.slice(2).join("-")
   return userKey === "None" ? undefined : userKey
 }

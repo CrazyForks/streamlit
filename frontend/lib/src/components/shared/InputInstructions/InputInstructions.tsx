@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 import React, { ReactElement } from "react"
 
-import { isFromMac } from "@streamlit/lib/src/util/utils"
-import { StyledWidgetInstructions } from "@streamlit/lib/src/components/widgets/BaseWidget"
+import { isFromMac } from "~lib/util/utils"
+import { StyledWidgetInstructions } from "~lib/components/widgets/BaseWidget"
 
 import { StyledMessage } from "./styled-components"
 
@@ -54,7 +54,7 @@ const InputInstructions = ({
   }
 
   // Show enter instruction if not a form or form allows Enter to submit
-  if (dirty && allowEnterToSubmit) {
+  if (allowEnterToSubmit) {
     const toSubmitFormOrApplyText = inForm ? "submit form" : "apply"
     if (type === "multiline") {
       const commandKey = isFromMac() ? "⌘" : "Ctrl"

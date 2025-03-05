@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,18 @@
 
 import React from "react"
 
-import "@testing-library/jest-dom"
 import { screen } from "@testing-library/react"
 
-import { render } from "@streamlit/lib/src/test_util"
-import { ImageList as ImageListProto } from "@streamlit/lib/src/proto"
-import { mockEndpoints } from "@streamlit/lib/src/mocks/mocks"
+import { ImageList as ImageListProto } from "@streamlit/protobuf"
 
-import { ImageList, ImageListProps } from "./ImageList"
+import { render } from "~lib/test_util"
+import { mockEndpoints } from "~lib/mocks/mocks"
+import * as UseResizeObserver from "~lib/hooks/useResizeObserver"
+
+import ImageList, { ImageListProps } from "./ImageList"
 
 describe("ImageList Element", () => {
-  const buildMediaURL = jest.fn().mockReturnValue("https://mock.media.url")
+  const buildMediaURL = vi.fn().mockReturnValue("https://mock.media.url")
 
   const getProps = (
     elementProps: Partial<ImageListProto> = {}
@@ -40,8 +41,14 @@ describe("ImageList Element", () => {
       ...elementProps,
     }),
     endpoints: mockEndpoints({ buildMediaURL: buildMediaURL }),
-    width: 0,
-    isFullScreen: false,
+  })
+
+  beforeEach(() => {
+    vi.spyOn(UseResizeObserver, "useResizeObserver").mockReturnValue({
+      elementRef: React.createRef(),
+      forceRecalculate: vitest.fn(),
+      values: [250],
+    })
   })
 
   it("renders without crashing", () => {
@@ -93,25 +100,6 @@ describe("ImageList Element", () => {
     expect(captions).toHaveLength(2)
     captions.forEach(caption => {
       expect(caption).toHaveStyle("width: 300px")
-    })
-  })
-
-  describe("fullScreen", () => {
-    const props = { ...getProps(), isFullScreen: true, height: 100 }
-
-    it("has a caption", () => {
-      render(<ImageList {...props} />)
-      expect(screen.getAllByTestId("stImageCaption")).toHaveLength(2)
-    })
-
-    it("has the proper style", () => {
-      render(<ImageList {...props} />)
-      const images = screen.getAllByRole("img")
-
-      expect(images).toHaveLength(2)
-      images.forEach(image => {
-        expect(image).toHaveStyle("max-height: 100px; object-fit: contain;")
-      })
     })
   })
 })

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 
 import React from "react"
 
-import "@testing-library/jest-dom"
 import { screen } from "@testing-library/react"
 
-import { render } from "@streamlit/lib/src/test_util"
-import { Progress as ProgressProto } from "@streamlit/lib/src/proto"
+import { Progress as ProgressProto } from "@streamlit/protobuf"
+
+import { render } from "~lib/test_util"
 
 import Progress, { ProgressProps } from "./Progress"
 
@@ -30,7 +30,6 @@ const getProps = (
   element: ProgressProto.create({
     value: 50,
   }),
-  width: 0,
   ...propOverrides,
 })
 
@@ -44,7 +43,7 @@ describe("Progress component", () => {
   })
 
   it("sets the value correctly", () => {
-    render(<Progress {...getProps({ width: 100 })} />)
+    render(<Progress {...getProps()} />)
 
     expect(screen.getByTestId("stProgress")).toBeInTheDocument()
     expect(screen.getByRole("progressbar")).toHaveAttribute(

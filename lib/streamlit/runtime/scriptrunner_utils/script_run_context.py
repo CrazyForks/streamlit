@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,12 +18,11 @@ import collections
 import contextlib
 import contextvars
 import threading
+from collections import Counter
 from dataclasses import dataclass, field
 from typing import (
     TYPE_CHECKING,
     Callable,
-    Counter,
-    Dict,
     Final,
     Union,
 )
@@ -44,7 +43,10 @@ from streamlit.runtime.forward_msg_cache import (
 from streamlit.runtime.runtime_util import is_cacheable_msg
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from streamlit.cursor import RunningCursor
+    from streamlit.proto.ClientState_pb2 import ContextInfo
     from streamlit.proto.ForwardMsg_pb2 import ForwardMsg
     from streamlit.proto.PageProfile_pb2 import Command
     from streamlit.runtime.fragment import FragmentStorage
@@ -54,7 +56,7 @@ if TYPE_CHECKING:
     from streamlit.runtime.uploaded_file_manager import UploadedFileManager
 _LOGGER: Final = get_logger(__name__)
 
-UserInfo: TypeAlias = Dict[str, Union[str, None]]
+UserInfo: TypeAlias = dict[str, Union[str, bool, None]]
 
 
 # If true, it indicates that we are in a cached function that disallows the usage of
@@ -90,6 +92,7 @@ class ScriptRunContext:
     pages_manager: PagesManager
 
     cached_messages: list[str] = field(default_factory=list)
+    context_info: ContextInfo | None = None
     gather_usage_stats: bool = False
     command_tracking_deactivated: bool = False
     tracked_commands: list[Command] = field(default_factory=list)
@@ -120,6 +123,10 @@ class ScriptRunContext:
     def active_script_hash(self):
         return self._active_script_hash
 
+    @property
+    def main_script_parent(self) -> Path:
+        return self.pages_manager.main_script_parent
+
     @contextlib.contextmanager
     def run_with_active_hash(self, page_hash: str):
         original_page_hash = self._active_script_hash
@@ -140,14 +147,16 @@ class ScriptRunContext:
         page_script_hash: str = "",
         fragment_ids_this_run: list[str] | None = None,
         cached_messages: list[str] | None = None,
+        context_info: ContextInfo | None = None,
     ) -> None:
         self.cursors = {}
         self.widget_ids_this_run = set()
         self.widget_user_keys_this_run = set()
         self.form_ids_this_run = set()
         self.query_string = query_string
+        self.context_info = context_info
         self.pages_manager.set_current_page_script_hash(page_script_hash)
-        self._active_script_hash = self.pages_manager.initial_active_script_hash
+        self._active_script_hash = self.pages_manager.main_script_hash
         # Permit set_page_config when the ScriptRunContext is reused on a rerun
         self._set_page_config_allowed = True
         self._has_script_started = False

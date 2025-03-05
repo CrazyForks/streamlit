@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,12 @@
  */
 
 import React from "react"
-import "@testing-library/jest-dom"
 
 import { screen } from "@testing-library/react"
 
-import { render } from "@streamlit/lib/src/test_util"
-import { Exception as ExceptionProto } from "@streamlit/lib/src/proto"
+import { Exception as ExceptionProto } from "@streamlit/protobuf"
+
+import { render } from "~lib/test_util"
 
 import ExceptionElement, { ExceptionElementProps } from "./ExceptionElement"
 
@@ -34,7 +34,6 @@ const getProps = (
     messageIsMarkdown: false,
     ...elementProps,
   }),
-  width: 0,
 })
 
 describe("ExceptionElement Element", () => {
@@ -55,6 +54,17 @@ describe("ExceptionElement Element", () => {
     traceRows.forEach((row, index) => {
       expect(row).toHaveTextContent(`step ${index + 1}`)
     })
+  })
+
+  it("should render only the message when type and stack are empty", () => {
+    render(<ExceptionElement {...getProps({ type: "", stackTrace: [] })} />)
+
+    expect(screen.queryByText("RuntimeError")).not.toBeInTheDocument()
+    expect(screen.queryByText("Traceback:")).not.toBeInTheDocument()
+
+    expect(
+      screen.getByText("This is an exception of type RuntimeError")
+    ).toBeInTheDocument()
   })
 
   it("should render markdown when it has messageIsMarkdown", () => {

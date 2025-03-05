@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,16 +28,15 @@ import { ALIGN, RadioGroup, Radio as UIRadio } from "baseui/radio"
 import {
   StyledWidgetLabelHelpInline,
   WidgetLabel,
-} from "@streamlit/lib/src/components/widgets/BaseWidget"
-import TooltipIcon from "@streamlit/lib/src/components/shared/TooltipIcon"
-import { LabelVisibilityOptions } from "@streamlit/lib/src/util/utils"
-import { Placement } from "@streamlit/lib/src/components/shared/Tooltip"
-import StreamlitMarkdown from "@streamlit/lib/src/components/shared/StreamlitMarkdown/StreamlitMarkdown"
+} from "~lib/components/widgets/BaseWidget"
+import TooltipIcon from "~lib/components/shared/TooltipIcon"
+import { LabelVisibilityOptions } from "~lib/util/utils"
+import { Placement } from "~lib/components/shared/Tooltip"
+import StreamlitMarkdown from "~lib/components/shared/StreamlitMarkdown/StreamlitMarkdown"
 
 export interface Props {
   disabled: boolean
   horizontal: boolean
-  width?: number
   value: number | null
   onChange: (selectedIndex: number) => any
   options: any[]
@@ -50,7 +49,6 @@ export interface Props {
 function Radio({
   disabled,
   horizontal,
-  width,
   value: defaultValue,
   onChange,
   options,
@@ -69,6 +67,8 @@ function Radio({
     setValue(defaultValue ?? null)
 
     // Exclude value from the dependency list on purpose to avoid a loop.
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line react-compiler/react-compiler
     /* eslint-disable react-hooks/exhaustive-deps */
   }, [defaultValue])
 
@@ -82,8 +82,6 @@ function Radio({
   )
 
   const theme = useTheme()
-  const { colors, radii } = theme
-  const style = { width }
   const hasCaptions = captions.length > 0
   const hasOptions = options.length > 0
   const cleanedOptions = hasOptions ? options : ["No options to select."]
@@ -99,7 +97,7 @@ function Radio({
   }
 
   return (
-    <div className="stRadio" data-testid="stRadio" style={style}>
+    <div className="stRadio" data-testid="stRadio">
       <WidgetLabel
         label={label}
         disabled={shouldDisable}
@@ -148,40 +146,46 @@ function Radio({
                   alignItems: "start",
                   paddingRight: theme.spacing.threeXS,
                   backgroundColor: $isFocusVisible
-                    ? colors.darkenedBgMix25
+                    ? theme.colors.darkenedBgMix25
                     : "",
-                  borderTopLeftRadius: radii.md,
-                  borderTopRightRadius: radii.md,
-                  borderBottomLeftRadius: radii.md,
-                  borderBottomRightRadius: radii.md,
                 }),
               },
               RadioMarkOuter: {
                 style: ({ $checked }: { $checked: boolean }) => ({
                   width: theme.sizes.checkbox,
                   height: theme.sizes.checkbox,
+                  // The margin top is needed to align the radio buttons
+                  // with the text label baseline.
+                  // The text label has a line-height of 1.6
+                  // making the font height around 1.6rem
+                  // while the radio icon has a height of 1rem.
+                  //eslint-disable-next-line streamlit-custom/no-hardcoded-theme-values
                   marginTop: "0.35rem",
                   marginRight: theme.spacing.none,
                   marginLeft: theme.spacing.none,
                   backgroundColor:
                     $checked && !shouldDisable
-                      ? colors.primary
-                      : colors.fadedText40,
+                      ? theme.colors.primary
+                      : theme.colors.fadedText40,
                 }),
               },
               RadioMarkInner: {
                 style: ({ $checked }: { $checked: boolean }) => ({
+                  // If checked, it should fill 37.5% of the total radio size.
+                  // if not checked, show a border of spacing.threeXS.
                   height: $checked
-                    ? "6px"
+                    ? "37.5%"
                     : `calc(${theme.sizes.checkbox} - ${theme.spacing.threeXS})`,
                   width: $checked
-                    ? "6px"
+                    ? "37.5%"
                     : `calc(${theme.sizes.checkbox} - ${theme.spacing.threeXS})`,
                 }),
               },
               Label: {
                 style: {
-                  color: shouldDisable ? colors.fadedText40 : colors.bodyText,
+                  color: shouldDisable
+                    ? theme.colors.fadedText40
+                    : theme.colors.bodyText,
                   position: "relative",
                   top: theme.spacing.px,
                 },

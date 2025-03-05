@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,20 @@
 
 import React, { memo, ReactElement, useCallback } from "react"
 
-import UIRadio from "@streamlit/lib/src/components/shared/Radio"
-import { Radio as RadioProto } from "@streamlit/lib/src/proto"
-import { WidgetStateManager } from "@streamlit/lib/src/WidgetStateManager"
+import { Radio as RadioProto } from "@streamlit/protobuf"
+
+import UIRadio from "~lib/components/shared/Radio"
+import { WidgetStateManager } from "~lib/WidgetStateManager"
 import {
   useBasicWidgetState,
-  ValueWSource,
-} from "@streamlit/lib/src/useBasicWidgetState"
-import { labelVisibilityProtoValueToEnum } from "@streamlit/lib/src/util/utils"
+  ValueWithSource,
+} from "~lib/hooks/useBasicWidgetState"
+import { labelVisibilityProtoValueToEnum } from "~lib/util/utils"
 
 export interface Props {
   disabled: boolean
   element: RadioProto
   widgetMgr: WidgetStateManager
-  width: number
   fragmentId?: string
 }
 
@@ -39,26 +39,26 @@ function Radio({
   disabled,
   element,
   widgetMgr,
-  width,
   fragmentId,
 }: Readonly<Props>): ReactElement {
-  const [value, setValueWSource] = useBasicWidgetState<RadioValue, RadioProto>(
-    {
-      getStateFromWidgetMgr,
-      getDefaultStateFromProto,
-      getCurrStateFromProto,
-      updateWidgetMgrState,
-      element,
-      widgetMgr,
-      fragmentId,
-    }
-  )
+  const [value, setValueWithSource] = useBasicWidgetState<
+    RadioValue,
+    RadioProto
+  >({
+    getStateFromWidgetMgr,
+    getDefaultStateFromProto,
+    getCurrStateFromProto,
+    updateWidgetMgrState,
+    element,
+    widgetMgr,
+    fragmentId,
+  })
 
   const onChange = useCallback(
     (selectedIndex: number): void => {
-      setValueWSource({ value: selectedIndex, fromUi: true })
+      setValueWithSource({ value: selectedIndex, fromUi: true })
     },
-    [setValueWSource]
+    [setValueWithSource]
   )
 
   const { horizontal, options, captions, label, labelVisibility, help } =
@@ -70,7 +70,6 @@ function Radio({
       onChange={onChange}
       options={options}
       captions={captions}
-      width={width}
       disabled={disabled}
       horizontal={horizontal}
       labelVisibility={labelVisibilityProtoValueToEnum(labelVisibility?.value)}
@@ -98,7 +97,7 @@ function getCurrStateFromProto(element: RadioProto): RadioValue {
 function updateWidgetMgrState(
   element: RadioProto,
   widgetMgr: WidgetStateManager,
-  vws: ValueWSource<RadioValue>,
+  vws: ValueWithSource<RadioValue>,
   fragmentId?: string
 ): void {
   widgetMgr.setIntValue(

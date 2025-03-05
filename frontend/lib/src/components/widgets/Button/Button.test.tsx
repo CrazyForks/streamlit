@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,19 @@
 
 import React from "react"
 
-import { fireEvent, screen } from "@testing-library/react"
+import { screen } from "@testing-library/react"
+import { userEvent } from "@testing-library/user-event"
 
-import "@testing-library/jest-dom"
-import { render } from "@streamlit/lib/src/test_util"
-import { WidgetStateManager } from "@streamlit/lib/src/WidgetStateManager"
-import { Button as ButtonProto } from "@streamlit/lib/src/proto"
+import { Button as ButtonProto } from "@streamlit/protobuf"
+
+import { render } from "~lib/test_util"
+import { WidgetStateManager } from "~lib/WidgetStateManager"
 
 import Button, { Props } from "./Button"
 
-jest.mock("@streamlit/lib/src/WidgetStateManager")
+vi.mock("~lib/WidgetStateManager")
 
-const sendBackMsg = jest.fn()
+const sendBackMsg = vi.fn()
 
 const getProps = (
   elementProps: Partial<ButtonProto> = {},
@@ -38,7 +39,6 @@ const getProps = (
     label: "Label",
     ...elementProps,
   }),
-  width: 250,
   disabled: false,
   // @ts-expect-error
   widgetMgr: new WidgetStateManager(sendBackMsg),
@@ -61,7 +61,6 @@ describe("Button widget", () => {
     const stButtonDiv = screen.getByTestId("stButton")
 
     expect(stButtonDiv).toHaveClass("stButton")
-    expect(stButtonDiv).toHaveStyle(`width: ${props.width}px`)
   })
 
   it("should render a label within the button", () => {
@@ -76,12 +75,13 @@ describe("Button widget", () => {
   })
 
   describe("BaseButton props should work", () => {
-    it("onClick prop", () => {
+    it("onClick prop", async () => {
+      const user = userEvent.setup()
       const props = getProps()
       render(<Button {...props} />)
 
       const buttonWidget = screen.getByRole("button")
-      fireEvent.click(buttonWidget)
+      await user.click(buttonWidget)
 
       expect(props.widgetMgr.setTriggerValue).toHaveBeenCalledWith(
         props.element,
@@ -90,14 +90,15 @@ describe("Button widget", () => {
       )
     })
 
-    it("passes fragmentId to onClick prop", () => {
+    it("passes fragmentId to onClick prop", async () => {
+      const user = userEvent.setup()
       const props = getProps(undefined, {
         fragmentId: "myFragmentId",
       })
       render(<Button {...props} />)
 
       const buttonWidget = screen.getByRole("button")
-      fireEvent.click(buttonWidget)
+      await user.click(buttonWidget)
 
       expect(props.widgetMgr.setTriggerValue).toHaveBeenCalledWith(
         props.element,
@@ -138,6 +139,6 @@ describe("Button widget", () => {
     )
 
     const buttonWidget = screen.getByRole("button")
-    expect(buttonWidget).toHaveStyle(`width: ${250}px`)
+    expect(buttonWidget).toHaveStyle(`width: 100%`)
   })
 })

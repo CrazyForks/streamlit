@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,17 +22,20 @@ import { darken, transparentize } from "color2k"
 import {
   BaseButtonKind,
   BaseButtonSize,
-} from "@streamlit/lib/src/components/shared/BaseButton/styled-components"
-import { EmotionTheme } from "@streamlit/lib/src/theme"
+} from "~lib/components/shared/BaseButton/styled-components"
+import { EmotionTheme } from "~lib/theme"
 
 export { BaseButtonKind, BaseButtonSize }
 
 export interface BaseLinkButtonProps {
-  kind: BaseButtonKind.PRIMARY | BaseButtonKind.SECONDARY
+  kind:
+    | BaseButtonKind.PRIMARY
+    | BaseButtonKind.SECONDARY
+    | BaseButtonKind.TERTIARY
   size?: BaseButtonSize
   disabled?: boolean
-  // If true or number, the button should take up container's full width
-  fluidWidth?: boolean | number
+  // If true, the button should take up container's full width
+  fluidWidth?: boolean
   children: ReactNode
   autoFocus?: boolean
   href: string
@@ -67,9 +70,6 @@ function getSizeStyle(size: BaseButtonSize, theme: EmotionTheme): CSSObject {
 
 export const StyledBaseLinkButton = styled.a<RequiredBaseLinkButtonProps>(
   ({ fluidWidth, size, theme }) => {
-    const buttonWidth =
-      typeof fluidWidth == "number" ? `${fluidWidth}px` : "100%"
-
     return {
       display: "inline-flex",
       alignItems: "center",
@@ -82,7 +82,7 @@ export const StyledBaseLinkButton = styled.a<RequiredBaseLinkButtonProps>(
       lineHeight: theme.lineHeights.base,
       color: theme.colors.primary,
       textDecoration: "none",
-      width: fluidWidth ? buttonWidth : "auto",
+      width: fluidWidth ? "100%" : "auto",
       userSelect: "none",
       "&:visited": {
         color: theme.colors.primary,
@@ -153,6 +153,37 @@ export const StyledSecondaryLinkButton = styled(
   },
   "&[disabled], &[disabled]:hover, &[disabled]:active": {
     borderColor: theme.colors.borderColor,
+    backgroundColor: theme.colors.transparent,
+    color: theme.colors.fadedText40,
+    cursor: "not-allowed",
+  },
+}))
+
+export const StyledTertiaryLinkButton = styled(
+  StyledBaseLinkButton
+)<RequiredBaseLinkButtonProps>(({ theme }) => ({
+  padding: theme.spacing.none,
+  backgroundColor: theme.colors.transparent,
+  color: theme.colors.bodyText,
+  border: "none",
+
+  "&:visited": {
+    color: theme.colors.bodyText,
+  },
+  "&:hover": {
+    color: theme.colors.primary,
+  },
+  "&:active": {
+    color: theme.colors.primary,
+  },
+  "&:focus": {
+    outline: "none",
+  },
+  "&:focus-visible": {
+    color: theme.colors.primary,
+    boxShadow: `0 0 0 0.2rem ${transparentize(theme.colors.primary, 0.5)}`,
+  },
+  "&[disabled], &[disabled]:hover, &[disabled]:active": {
     backgroundColor: theme.colors.transparent,
     color: theme.colors.fadedText40,
     cursor: "not-allowed",

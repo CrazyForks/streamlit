@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,22 @@
  * limitations under the License.
  */
 
-import { renderHook } from "@testing-library/react-hooks"
 import {
   CompactSelection,
   GridSelection,
   TextCell,
 } from "@glideapps/glide-data-grid"
+import { renderHook } from "@testing-library/react"
+import { Field, Int64, Utf8 } from "apache-arrow"
 
 import {
   BaseColumn,
   NumberColumn,
   TextColumn,
-} from "@streamlit/lib/src/components/widgets/DataFrame/columns"
-import EditingState from "@streamlit/lib/src/components/widgets/DataFrame/EditingState"
-import { notNullOrUndefined } from "@streamlit/lib/src/util/utils"
+} from "~lib/components/widgets/DataFrame/columns"
+import EditingState from "~lib/components/widgets/DataFrame/EditingState"
+import { DataFrameCellType } from "~lib/dataframes/arrowTypeUtils"
+import { notNullOrUndefined } from "~lib/util/utils"
 
 import useDataEditor from "./useDataEditor"
 
@@ -38,12 +40,20 @@ const MOCK_COLUMNS: BaseColumn[] = [
     title: "column_1",
     indexNumber: 0,
     arrowType: {
-      pandas_type: "int64",
-      numpy_type: "int64",
+      type: DataFrameCellType.DATA,
+      arrowField: new Field("column_1", new Int64(), true),
+      pandasType: {
+        field_name: "column_1",
+        name: "column_1",
+        pandas_type: "int64",
+        numpy_type: "int64",
+        metadata: null,
+      },
     },
     isEditable: true,
     isHidden: false,
     isIndex: false,
+    isPinned: false,
     isStretched: false,
   }),
   TextColumn({
@@ -52,12 +62,20 @@ const MOCK_COLUMNS: BaseColumn[] = [
     title: "column_2",
     indexNumber: 1,
     arrowType: {
-      pandas_type: "unicode",
-      numpy_type: "object",
+      type: DataFrameCellType.DATA,
+      arrowField: new Field("column_2", new Utf8(), true),
+      pandasType: {
+        field_name: "column_2",
+        name: "column_2",
+        pandas_type: "unicode",
+        numpy_type: "object",
+        metadata: null,
+      },
     },
     isEditable: true,
     isHidden: false,
     isIndex: false,
+    isPinned: false,
     isStretched: false,
     defaultValue: "foo",
     columnTypeOptions: {
@@ -68,14 +86,14 @@ const MOCK_COLUMNS: BaseColumn[] = [
 ]
 
 const INITIAL_NUM_ROWS = 3
-const refreshCellsMock = jest.fn()
-const syncEditsMock = jest.fn()
-const updateNumRows = jest.fn()
-const clearSelectionMock = jest.fn()
-const getOriginalIndexMock = jest.fn().mockImplementation((index: number) => {
+const refreshCellsMock = vi.fn()
+const syncEditsMock = vi.fn()
+const updateNumRows = vi.fn()
+const clearSelectionMock = vi.fn()
+const getOriginalIndexMock = vi.fn().mockImplementation((index: number) => {
   return index
 })
-const getCellContentMock = jest
+const getCellContentMock = vi
   .fn()
   .mockImplementation(([col]: readonly [number]) => {
     const column = MOCK_COLUMNS[col]
@@ -87,7 +105,7 @@ const getCellContentMock = jest
 
 describe("useDataEditor hook", () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
   it("allows to edit cells with onCellEdited", () => {
     const editingState = {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,19 +21,19 @@ import { PLACEMENT, StatefulPopover } from "baseui/popover"
 import { MoreVert } from "@emotion-icons/material-rounded"
 import { useTheme } from "@emotion/react"
 
-import { notNullOrUndefined } from "@streamlit/lib/src/util/utils"
 import {
   BaseButton,
   BaseButtonKind,
-  Config,
+  convertRemToPx,
   EmotionTheme,
   Icon,
   IGuestToHostMessage,
   IMenuItem,
-  PageConfig,
 } from "@streamlit/lib"
+import { Config, PageConfig } from "@streamlit/protobuf"
+import { notNullOrUndefined } from "@streamlit/utils"
 import ScreenCastRecorder from "@streamlit/app/src/util/ScreenCastRecorder"
-import { SegmentMetricsManager } from "@streamlit/app/src/SegmentMetricsManager"
+import { MetricsManager } from "@streamlit/app/src/MetricsManager"
 
 import {
   StyledCoreItem,
@@ -86,18 +86,11 @@ export interface Props {
 
   toolbarMode: Config.ToolbarMode
 
-  metricsMgr: SegmentMetricsManager
+  metricsMgr: MetricsManager
 }
 
 const getOpenInWindowCallback = (url: string) => (): void => {
   window.open(url, "_blank")
-}
-
-export const isLocalhost = (): boolean => {
-  return (
-    window.location.hostname === "localhost" ||
-    window.location.hostname === "127.0.0.1"
-  )
 }
 
 export interface MenuItemProps {
@@ -113,7 +106,7 @@ export interface SubMenuProps {
   menuItems: any[]
   closeMenu: () => void
   isDevMenu: boolean
-  metricsMgr: SegmentMetricsManager
+  metricsMgr: MetricsManager
 }
 
 // BaseWeb provides a very basic list item (or option) for its dropdown
@@ -130,7 +123,7 @@ export interface SubMenuProps {
 //  * creating a forward ref to add properties to the DOM element.
 function buildMenuItemComponent(
   StyledMenuItemType: typeof StyledCoreItem | typeof StyledDevItem,
-  metricsMgr: SegmentMetricsManager
+  metricsMgr: MetricsManager
 ): any {
   const MenuItem = forwardRef<HTMLLIElement, MenuItemProps>(
     (
@@ -205,8 +198,9 @@ function buildMenuItemComponent(
 }
 
 const SubMenu = (props: SubMenuProps): ReactElement => {
-  const { colors, sizes }: EmotionTheme = useTheme()
+  const { colors, sizes, spacing }: EmotionTheme = useTheme()
   const StyledMenuItemType = props.isDevMenu ? StyledDevItem : StyledCoreItem
+
   return (
     <StatefulMenu
       items={props.menuItems}
@@ -227,6 +221,9 @@ const SubMenu = (props: SubMenuProps): ReactElement => {
             borderTopRadius: 0,
             borderLeftRadius: 0,
             borderRightRadius: 0,
+
+            paddingBottom: spacing.sm,
+            paddingTop: spacing.sm,
 
             ":focus": {
               outline: "none",
@@ -383,7 +380,7 @@ function MainMenu(props: Readonly<Props>): ReactElement {
       noHighlight: true,
       interactions: {},
       styleProps: {
-        fontSize: theme.fontSizes.twoSmPx,
+        fontSize: convertRemToPx(theme.fontSizes.twoSm),
         margin: `-${theme.spacing.sm} 0 0 0`,
         padding: `${theme.spacing.twoXS} ${theme.spacing.none} ${theme.spacing.twoXS} ${theme.spacing.twoXL}`,
         pointerEvents: "none",

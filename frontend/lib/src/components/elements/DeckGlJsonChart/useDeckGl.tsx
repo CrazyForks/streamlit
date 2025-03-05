@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,20 +17,22 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 
 import JSON5 from "json5"
-import { PickingInfo } from "@deck.gl/core/typed"
+import { PickingInfo, ViewStateChangeParameters } from "@deck.gl/core"
+import { TooltipContent } from "@deck.gl/core/dist/lib/tooltip"
 import isEqual from "lodash/isEqual"
-import { ViewStateChangeParameters } from "@deck.gl/core/typed/controllers/controller"
-import { TooltipContent } from "@deck.gl/core/typed/lib/tooltip"
 import { parseToRgba } from "color2k"
 
-import { useStWidthHeight } from "@streamlit/lib/src/hooks/useStWidthHeight"
-import { EmotionTheme } from "@streamlit/lib/src/theme"
-import { DeckGlJsonChart as DeckGlJsonChartProto } from "@streamlit/lib/src/proto"
+import { DeckGlJsonChart as DeckGlJsonChartProto } from "@streamlit/protobuf"
+
+import { useStWidthHeight } from "~lib/hooks/useStWidthHeight"
+import { EmotionTheme } from "~lib/theme"
 import {
   useBasicWidgetClientState,
-  ValueWSource,
-} from "@streamlit/lib/src/useBasicWidgetState"
-import { WidgetStateManager } from "@streamlit/lib/src/WidgetStateManager"
+  ValueWithSource,
+} from "~lib/hooks/useBasicWidgetState"
+import { WidgetStateManager } from "~lib/WidgetStateManager"
+import { useRequiredContext } from "~lib/hooks/useRequiredContext"
+import { ElementFullscreenContext } from "~lib/components/shared/ElementFullscreen/ElementFullscreenContext"
 
 import type {
   DeckGlElementState,
@@ -55,9 +57,9 @@ type UseDeckGlShape = {
   onViewStateChange: (params: ViewStateChangeParameters) => void
   selectionMode: DeckGlJsonChartProto.SelectionMode | undefined
   setSelection: React.Dispatch<
-    React.SetStateAction<ValueWSource<DeckGlElementState> | null>
+    React.SetStateAction<ValueWithSource<DeckGlElementState> | null>
   >
-  viewState: Record<string, unknown>
+  viewState: Record<string, unknown> | null
   width: number | string
 }
 
@@ -65,8 +67,6 @@ export type UseDeckGlProps = Omit<DeckGLProps, "mapboxToken"> & {
   isLightTheme: boolean
   theme: EmotionTheme
 }
-
-const DEFAULT_DECK_GL_HEIGHT = 500
 
 export const EMPTY_STATE: DeckGlElementState = {
   selection: {
@@ -138,7 +138,7 @@ function getStateFromWidgetMgr(
 function updateWidgetMgrState(
   element: DeckGlJsonChartProto,
   widgetMgr: WidgetStateManager,
-  vws: ValueWSource<DeckGlElementState>,
+  vws: ValueWithSource<DeckGlElementState>,
   fragmentId?: string
 ): void {
   if (!element.id) {
@@ -155,15 +155,12 @@ function updateWidgetMgrState(
 
 export const useDeckGl = (props: UseDeckGlProps): UseDeckGlShape => {
   const {
-    element,
-    fragmentId,
     height: propsHeight,
-    isFullScreen: propsIsFullScreen,
-    isLightTheme,
-    theme,
-    widgetMgr,
     width: propsWidth,
-  } = props
+    expanded: propsIsFullScreen,
+  } = useRequiredContext(ElementFullscreenContext)
+
+  const { element, fragmentId, isLightTheme, theme, widgetMgr } = props
   const {
     selectionMode: allSelectionModes,
     tooltip,
@@ -183,11 +180,9 @@ export const useDeckGl = (props: UseDeckGlProps): UseDeckGlShape => {
     fragmentId,
   })
 
-  const [viewState, setViewState] = useState<Record<string, unknown>>({
-    bearing: 0,
-    pitch: 0,
-    zoom: 11,
-  })
+  const [viewState, setViewState] = useState<Record<string, unknown> | null>(
+    null
+  )
 
   const { height, width } = useStWidthHeight({
     element,
@@ -195,13 +190,14 @@ export const useDeckGl = (props: UseDeckGlProps): UseDeckGlShape => {
     shouldUseContainerWidth,
     container: { height: propsHeight, width: propsWidth },
     heightFallback:
-      (viewState.initialViewState as { height: number } | undefined)?.height ||
-      DEFAULT_DECK_GL_HEIGHT,
+      (viewState?.initialViewState as { height: number } | undefined)
+        ?.height || theme.sizes.defaultMapHeight,
   })
 
-  const [initialViewState, setInitialViewState] = useState<
-    Record<string, unknown>
-  >({})
+  const [initialViewState, setInitialViewState] = useState<Record<
+    string,
+    unknown
+  > | null>(null)
 
   /**
    * Our proto for selectionMode is an array in order to support future-looking
@@ -220,6 +216,8 @@ export const useDeckGl = (props: UseDeckGlProps): UseDeckGlShape => {
   const parsedPydeckJson = useMemo(() => {
     return Object.freeze(JSON5.parse<ParsedDeckGlConfig>(element.json))
     // Only parse JSON when transitioning to/from fullscreen, the json changes, or theme changes
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line react-compiler/react-compiler
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFullScreen, isLightTheme, element.json])
 
@@ -232,18 +230,6 @@ export const useDeckGl = (props: UseDeckGlProps): UseDeckGlShape => {
       copy.mapStyle = `mapbox://styles/mapbox/${
         isLightTheme ? "light" : "dark"
       }-v9`
-    }
-
-    // Set width and height based on the fullscreen state
-    if (isFullScreen) {
-      Object.assign(copy.initialViewState, { width, height })
-    } else {
-      if (!copy.initialViewState.height) {
-        copy.initialViewState.height = DEFAULT_DECK_GL_HEIGHT
-      }
-      if (shouldUseContainerWidth) {
-        copy.initialViewState.width = width
-      }
     }
 
     if (copy.layers) {
@@ -349,15 +335,11 @@ export const useDeckGl = (props: UseDeckGlProps): UseDeckGlShape => {
     return jsonConverter.convert(copy)
   }, [
     data.selection.indices,
-    height,
-    isFullScreen,
     isLightTheme,
     isSelectionModeActivated,
     parsedPydeckJson,
-    shouldUseContainerWidth,
     theme.colors.gray20,
     theme.colors.primary,
-    width,
   ])
 
   useEffect(() => {
@@ -366,7 +348,7 @@ export const useDeckGl = (props: UseDeckGlProps): UseDeckGlShape => {
       const diff = Object.keys(deck.initialViewState).reduce(
         (diff, key): any => {
           // @ts-expect-error
-          if (deck.initialViewState[key] === initialViewState[key]) {
+          if (deck.initialViewState[key] === initialViewState?.[key]) {
             return diff
           }
 
@@ -379,7 +361,7 @@ export const useDeckGl = (props: UseDeckGlProps): UseDeckGlShape => {
         {}
       )
 
-      setViewState({ ...viewState, ...diff })
+      setViewState(existing => ({ ...existing, ...diff }))
       setInitialViewState(deck.initialViewState)
     }
   }, [deck.initialViewState, initialViewState, viewState])

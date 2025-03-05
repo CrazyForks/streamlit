@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,18 +24,19 @@ import {
 } from "baseui/checkbox"
 import { transparentize } from "color2k"
 
-import { labelVisibilityProtoValueToEnum } from "@streamlit/lib/src/util/utils"
-import { Checkbox as CheckboxProto } from "@streamlit/lib/src/proto"
-import { WidgetStateManager } from "@streamlit/lib/src/WidgetStateManager"
+import { Checkbox as CheckboxProto } from "@streamlit/protobuf"
+
+import { labelVisibilityProtoValueToEnum } from "~lib/util/utils"
+import { WidgetStateManager } from "~lib/WidgetStateManager"
 import {
   useBasicWidgetState,
-  ValueWSource,
-} from "@streamlit/lib/src/useBasicWidgetState"
-import { hasLightBackgroundColor } from "@streamlit/lib/src/theme"
-import TooltipIcon from "@streamlit/lib/src/components/shared/TooltipIcon"
-import { Placement } from "@streamlit/lib/src/components/shared/Tooltip"
-import { StyledWidgetLabelHelpInline } from "@streamlit/lib/src/components/widgets/BaseWidget"
-import StreamlitMarkdown from "@streamlit/lib/src/components/shared/StreamlitMarkdown"
+  ValueWithSource,
+} from "~lib/hooks/useBasicWidgetState"
+import { hasLightBackgroundColor } from "~lib/theme"
+import TooltipIcon from "~lib/components/shared/TooltipIcon"
+import { Placement } from "~lib/components/shared/Tooltip"
+import { StyledWidgetLabelHelpInline } from "~lib/components/widgets/BaseWidget"
+import StreamlitMarkdown from "~lib/components/shared/StreamlitMarkdown"
 
 import { StyledCheckbox, StyledContent } from "./styled-components"
 
@@ -43,34 +44,34 @@ export interface Props {
   disabled: boolean
   element: CheckboxProto
   widgetMgr: WidgetStateManager
-  width: number
   fragmentId?: string
 }
 
 function Checkbox({
-  width,
   element,
   disabled,
   widgetMgr,
   fragmentId,
 }: Readonly<Props>): ReactElement {
-  const [value, setValueWSource] = useBasicWidgetState<boolean, CheckboxProto>(
-    {
-      getStateFromWidgetMgr,
-      getDefaultStateFromProto,
-      getCurrStateFromProto,
-      updateWidgetMgrState,
-      element,
-      widgetMgr,
-      fragmentId,
-    }
-  )
+  const [value, setValueWithSource] = useBasicWidgetState<
+    boolean,
+    CheckboxProto
+  >({
+    getStateFromWidgetMgr,
+    getDefaultStateFromProto,
+    getCurrStateFromProto,
+    updateWidgetMgrState,
+    element,
+    widgetMgr,
+    fragmentId,
+  })
 
   const onChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>): void => {
-      setValueWSource({ value: e.target.checked, fromUi: true })
+      setValueWithSource({ value: e.target.checked, fromUi: true })
     },
-    [setValueWSource]
+    // ESLint complains if we remove this unnecessary dep.
+    [setValueWithSource]
   )
 
   const theme = useTheme()
@@ -81,11 +82,7 @@ function Checkbox({
   const color = disabled ? colors.fadedText40 : colors.bodyText
 
   return (
-    <StyledCheckbox
-      className="row-widget stCheckbox"
-      data-testid="stCheckbox"
-      width={width}
-    >
+    <StyledCheckbox className="row-widget stCheckbox" data-testid="stCheckbox">
       <UICheckbox
         checked={value}
         disabled={disabled}
@@ -102,7 +99,6 @@ function Checkbox({
             style: ({ $isFocusVisible }: { $isFocusVisible: boolean }) => ({
               marginBottom: spacing.none,
               marginTop: spacing.none,
-              paddingRight: spacing.twoThirdsSmFont,
               backgroundColor: $isFocusVisible ? colors.darkenedBgMix25 : "",
               display: "flex",
               alignItems: "start",
@@ -155,10 +151,10 @@ function Checkbox({
                 minWidth: `calc(2 * ${sizes.checkbox})`,
                 height: sizes.checkbox,
                 minHeight: sizes.checkbox,
-                borderBottomLeftRadius: theme.radii.lg,
-                borderTopLeftRadius: theme.radii.lg,
-                borderBottomRightRadius: theme.radii.lg,
-                borderTopRightRadius: theme.radii.lg,
+                borderBottomLeftRadius: theme.radii.full,
+                borderTopLeftRadius: theme.radii.full,
+                borderBottomRightRadius: theme.radii.full,
+                borderTopRightRadius: theme.radii.full,
                 backgroundColor,
               }
             },
@@ -202,6 +198,8 @@ function Checkbox({
           },
           Label: {
             style: {
+              lineHeight: theme.lineHeights.small,
+              paddingLeft: theme.spacing.sm,
               position: "relative",
               color,
             },
@@ -252,7 +250,7 @@ function getCurrStateFromProto(element: CheckboxProto): boolean {
 function updateWidgetMgrState(
   element: CheckboxProto,
   widgetMgr: WidgetStateManager,
-  vws: ValueWSource<boolean>,
+  vws: ValueWithSource<boolean>,
   fragmentId?: string
 ): void {
   widgetMgr.setBoolValue(

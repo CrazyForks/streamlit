@@ -44,10 +44,13 @@ jobs:
         uses: ./.github/actions/make_init
       - name: Install playwright
         run: python -m playwright install --with-deps
-      - name: Run make frontend-fast
-        run: make frontend-fast
-      - name: Run make playwright
-        run: make playwright
+      - name: Run make frontend-build-with-profiler
+        run: make frontend-build-with-profiler
+      - name: Run playwright tests
+        run: |
+          cd e2e_playwright
+          rm -rf ./test-results
+          pytest --ignore ./custom_components --browser webkit --browser chromium --browser firefox -n auto --reruns 1 -m "not performance"
       - name: Upload failed test results
         uses: actions/upload-artifact@v4
         if: always()

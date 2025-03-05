@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,26 +16,26 @@
 
 import React from "react"
 
-import "@testing-library/jest-dom"
 import { screen } from "@testing-library/react"
 
-import { render } from "@streamlit/lib/src/test_util"
-import { Audio as AudioProto } from "@streamlit/lib/src/proto"
-import { mockEndpoints } from "@streamlit/lib/src/mocks/mocks"
-import { WidgetStateManager as ElementStateManager } from "@streamlit/lib/src/WidgetStateManager"
+import { Audio as AudioProto } from "@streamlit/protobuf"
+
+import { render } from "~lib/test_util"
+import { mockEndpoints } from "~lib/mocks/mocks"
+import { WidgetStateManager as ElementStateManager } from "~lib/WidgetStateManager"
 
 import Audio, { AudioProps } from "./Audio"
 
 describe("Audio Element", () => {
-  const buildMediaURL = jest.fn().mockReturnValue("https://mock.media.url")
+  const buildMediaURL = vi.fn().mockReturnValue("https://mock.media.url")
 
-  const mockSetElementState = jest.fn()
-  const mockGetElementState = jest.fn()
+  const mockSetElementState = vi.fn()
+  const mockGetElementState = vi.fn()
   const elementMgrMock = {
     setElementState: mockSetElementState,
     getElementState: mockGetElementState,
-    sendRerunBackMsg: jest.fn(),
-    formsDataChanged: jest.fn(),
+    sendRerunBackMsg: vi.fn(),
+    formsDataChanged: vi.fn(),
   }
 
   const getProps = (elementProps: Partial<AudioProto> = {}): AudioProps => ({
@@ -45,7 +45,6 @@ describe("Audio Element", () => {
       ...elementProps,
     }),
     endpoints: mockEndpoints({ buildMediaURL: buildMediaURL }),
-    width: 0,
     elementMgr: elementMgrMock as unknown as ElementStateManager,
   })
 
@@ -69,7 +68,7 @@ describe("Audio Element", () => {
   })
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     mockGetElementState.mockReturnValue(false) // By default, assume autoplay is not prevented
   })
 

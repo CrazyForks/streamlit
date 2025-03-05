@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,12 +24,12 @@ def test_renders_chat_messages_correctly_1(
     """Test if the chat messages render correctly"""
     # Wait a bit more to allow all images to load:
     chat_message_elements = themed_app.get_by_test_id("stChatMessage")
-    expect(chat_message_elements).to_have_count(14)
+    expect(chat_message_elements).to_have_count(16)
 
     # rerun to populate session state chat message
     rerun_app(themed_app)
 
-    expect(chat_message_elements).to_have_count(16)
+    expect(chat_message_elements).to_have_count(18)
     for i, element in enumerate(chat_message_elements.all()):
         element.scroll_into_view_if_needed()
         expect(element).to_be_in_viewport()

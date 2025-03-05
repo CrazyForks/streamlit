@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,10 +21,7 @@ from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
     Final,
-    Iterable,
-    List,
     Literal,
     TypedDict,
     Union,
@@ -50,6 +47,8 @@ from streamlit.runtime.scriptrunner_utils.script_run_context import get_script_r
 from streamlit.runtime.state import WidgetCallback, register_widget
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     import matplotlib
     import plotly.graph_objs as go
     from plotly.basedatatypes import BaseFigure
@@ -65,11 +64,11 @@ _AtomicFigureOrData: TypeAlias = Union[
 ]
 FigureOrData: TypeAlias = Union[
     _AtomicFigureOrData,
-    List[_AtomicFigureOrData],
+    list[_AtomicFigureOrData],
     # It is kind of hard to figure out exactly what kind of dict is supported
     # here, as plotly hasn't embraced typing yet. This version is chosen to
     # align with the docstring.
-    Dict[str, _AtomicFigureOrData],
+    dict[str, _AtomicFigureOrData],
     "BaseFigure",
     "matplotlib.figure.Figure",
 ]
@@ -82,7 +81,7 @@ class PlotlySelectionState(TypedDict, total=False):
     """
     The schema for the Plotly chart selection state.
 
-    The selection state is stored in a dictionary-like object that suports both
+    The selection state is stored in a dictionary-like object that supports both
     key and attribute notation. Selection states cannot be programmatically
     changed or set through Session State.
 
@@ -170,7 +169,7 @@ class PlotlyState(TypedDict, total=False):
     """
     The schema for the Plotly chart event state.
 
-    The event state is stored in a dictionary-like object that suports both
+    The event state is stored in a dictionary-like object that supports both
     key and attribute notation. Event states cannot be programmatically
     changed or set through Session State.
 
@@ -179,7 +178,7 @@ class PlotlyState(TypedDict, total=False):
     Attributes
     ----------
     selection : dict
-        The state of the ``on_select`` event. This attribure returns a
+        The state of the ``on_select`` event. This attribute returns a
         dictionary-like object that supports both key and attribute notation.
         The attributes are described by the ``PlotlySelectionState`` dictionary
         schema.
@@ -273,7 +272,7 @@ class PlotlyMixin:
     def plotly_chart(
         self,
         figure_or_data: FigureOrData,
-        use_container_width: bool = False,
+        use_container_width: bool = True,
         *,
         theme: Literal["streamlit"] | None = "streamlit",
         key: Key | None = None,
@@ -290,7 +289,7 @@ class PlotlyMixin:
     def plotly_chart(
         self,
         figure_or_data: FigureOrData,
-        use_container_width: bool = False,
+        use_container_width: bool = True,
         *,
         theme: Literal["streamlit"] | None = "streamlit",
         key: Key | None = None,
@@ -307,7 +306,7 @@ class PlotlyMixin:
     def plotly_chart(
         self,
         figure_or_data: FigureOrData,
-        use_container_width: bool = False,
+        use_container_width: bool = True,
         *,
         theme: Literal["streamlit"] | None = "streamlit",
         key: Key | None = None,
@@ -328,6 +327,10 @@ class PlotlyMixin:
         To show Plotly charts in Streamlit, call ``st.plotly_chart`` wherever
         you would call Plotly's ``py.plot`` or ``py.iplot``.
 
+        .. Important::
+            You must install ``plotly`` to use this command. Your app's
+            performance may be enhanced by installing ``orjson`` as well.
+
         Parameters
         ----------
         figure_or_data : plotly.graph_objs.Figure, plotly.graph_objs.Data,\
@@ -338,11 +341,11 @@ class PlotlyMixin:
 
         use_container_width : bool
             Whether to override the figure's native width with the width of
-            the parent container. If ``use_container_width`` is ``False``
-            (default), Streamlit sets the width of the chart to fit its contents
-            according to the plotting library, up to the width of the parent
-            container. If ``use_container_width`` is ``True``, Streamlit sets
-            the width of the figure to match the width of the parent container.
+            the parent container. If ``use_container_width`` is ``True`` (default),
+            Streamlit sets the width of the figure to match the width of the parent
+            container. If ``use_container_width`` is ``False``, Streamlit sets the
+            width of the chart to fit its contents according to the plotting library,
+            up to the width of the parent container.
 
         theme : "streamlit" or None
             The theme of the chart. If ``theme`` is ``"streamlit"`` (default),
@@ -396,8 +399,8 @@ class PlotlyMixin:
         Returns
         -------
         element or dict
-            If ``on_select`` is ``"ignore"`` (default), this method returns an
-            internal placeholder for the chart element. Otherwise, this method
+            If ``on_select`` is ``"ignore"`` (default), this command returns an
+            internal placeholder for the chart element. Otherwise, this command
             returns a dictionary-like object that supports both key and
             attribute notation. The attributes are described by the
             ``PlotlyState`` dictionary schema.
@@ -427,7 +430,7 @@ class PlotlyMixin:
         ...         hist_data, group_labels, bin_size=[.1, .25, .5])
         >>>
         >>> # Plot!
-        >>> st.plotly_chart(fig, use_container_width=True)
+        >>> st.plotly_chart(fig)
 
         .. output::
            https://doc-plotly-chart.streamlit.app/
@@ -524,12 +527,12 @@ class PlotlyMixin:
             serde = PlotlyChartSelectionSerde()
 
             widget_state = register_widget(
-                "plotly_chart",
-                plotly_chart_proto,
+                plotly_chart_proto.id,
                 on_change_handler=on_select if callable(on_select) else None,
                 deserializer=serde.deserialize,
                 serializer=serde.serialize,
                 ctx=ctx,
+                value_type="string_value",
             )
 
             self.dg._enqueue("plotly_chart", plotly_chart_proto)

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 
 import React from "react"
 
-import "@testing-library/jest-dom"
 import { screen } from "@testing-library/react"
 
-import { DocString as DocStringProto } from "@streamlit/lib/src/proto"
-import { render } from "@streamlit/lib/src/test_util"
+import { DocString as DocStringProto } from "@streamlit/protobuf"
+
+import { render } from "~lib/test_util"
 
 import DocString, { DocStringProps, Member } from "./DocString"
 
@@ -34,7 +34,6 @@ const getProps = (
     type: "method",
     ...elementProps,
   }),
-  width: 0,
 })
 
 describe("DocString Element", () => {

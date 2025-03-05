@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,8 @@
 # limitations under the License.
 
 from __future__ import annotations
+
+from pathlib import Path
 
 import pytest
 
@@ -40,8 +42,13 @@ def test_smoke():
     assert at.radio.values == ["b", "c"]
 
 
-def test_from_file():
+def test_from_file_str():
     script = AppTest.from_file("../test_data/widgets_script.py")
+    script.run()
+
+
+def test_from_file_path():
+    script = AppTest.from_file(Path("../test_data/widgets_script.py"))
     script.run()
 
 

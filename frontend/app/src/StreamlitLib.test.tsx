@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,31 +18,42 @@
 
 import React, { PureComponent, ReactElement } from "react"
 
-import "@testing-library/jest-dom"
 import { screen, waitFor } from "@testing-library/react"
 
+import {
+  AppConfig as ConnectionAppConfig,
+  LibConfig as ConnectionLibConfig,
+  StreamlitEndpoints,
+} from "@streamlit/connection"
 import {
   AppRoot,
   ComponentRegistry,
   createFormsData,
-  Delta as DeltaProto,
-  Element as ElementProto,
   FileUploadClient,
   FormsData,
-  ForwardMsgMetadata as ForwardMsgMetadataProto,
+  AppConfig as LibAppConfig,
+  LibConfig as LibLibConfig,
   render,
   ScriptRunState,
   SessionInfo,
-  StreamlitEndpoints,
-  Text as TextProto,
   VerticalBlock,
   WidgetStateManager,
 } from "@streamlit/lib"
+import {
+  Delta as DeltaProto,
+  Element as ElementProto,
+  ForwardMsgMetadata as ForwardMsgMetadataProto,
+  Text as TextProto,
+} from "@streamlit/protobuf"
 
 /**
  * Example StreamlitEndpoints implementation.
  */
 class Endpoints implements StreamlitEndpoints {
+  public setStaticConfigUrl(url: string | null): void {
+    throw new Error("Unimplemented")
+  }
+
   public buildComponentURL(): string {
     throw new Error("Unimplemented")
   }
@@ -116,8 +127,8 @@ class StreamlitLibExample extends PureComponent<Props, State> {
       // to a FileUploadClient callback. The FormSubmitButton element
       // reads the state.
       formsWithPendingRequestsChanged: formIds =>
-        this.widgetMgr.setFormsWithUploads(formIds),
-      requestFileURLs: jest.fn(),
+        this.widgetMgr.setFormsWithUploadsInProgress(formIds),
+      requestFileURLs: vi.fn(),
     })
 
     this.sessionInfo.setCurrent({
@@ -197,7 +208,6 @@ class StreamlitLibExample extends PureComponent<Props, State> {
       <VerticalBlock
         node={blockNode}
         endpoints={this.endpoints}
-        sessionInfo={this.sessionInfo}
         scriptRunId={this.state.scriptRunId}
         scriptRunState={this.state.scriptRunState}
         widgetMgr={this.widgetMgr}
@@ -223,7 +233,7 @@ describe("StreamlitLibExample", () => {
     )
   })
 
-  it("handles Delta messages", () => {
+  it("handles Delta messages", async () => {
     // there's nothing within the app ui to cycle through script run messages so we need a reference
     let streamlitLibInstance: any
     render(
@@ -256,6 +266,15 @@ describe("StreamlitLibExample", () => {
     expect(screen.queryByText("Please wait...")).not.toBeInTheDocument()
 
     // And we should have the single Text element we created
-    expect(screen.getByText("Hello, world!")).toBeInTheDocument()
+    expect(await screen.findByText("Hello, world!")).toBeInTheDocument()
+  })
+
+  it("sees app config as the same structure", () => {
+    const appConfig: ConnectionAppConfig = {} as LibAppConfig
+    const libConfig: ConnectionLibConfig = {} as LibLibConfig
+
+    // Creating a test to ensure this just passes. The above will break
+    // the typechecker if the structures are not the same.
+    expect(true).toBe(true)
   })
 })

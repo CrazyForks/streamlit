@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,10 +14,8 @@
 
 from __future__ import annotations
 
-import hashlib
-
 from streamlit.proto.ForwardMsg_pb2 import ForwardMsg
-from streamlit.util import HASHLIB_KWARGS
+from streamlit.util import calc_md5
 
 
 def populate_hash_if_needed(msg: ForwardMsg) -> str:
@@ -44,9 +42,7 @@ def populate_hash_if_needed(msg: ForwardMsg) -> str:
         msg.ClearField("metadata")
 
         # MD5 is good enough for what we need, which is uniqueness.
-        hasher = hashlib.md5(**HASHLIB_KWARGS)
-        hasher.update(msg.SerializeToString())
-        msg.hash = hasher.hexdigest()
+        msg.hash = calc_md5(msg.SerializeToString())
 
         # Restore metadata.
         msg.metadata.CopyFrom(metadata)

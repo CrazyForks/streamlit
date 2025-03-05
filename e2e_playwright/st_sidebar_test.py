@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -64,6 +64,15 @@ def test_sidebar_no_collapse_on_text_input_mobile(app: Page):
 
     sidebar = app.get_by_test_id("stSidebar")
     expect(sidebar).to_have_attribute("aria-expanded", "true")
+
+
+def test_sidebar_chart_and_toolbar(app: Page):
+    sidebar = app.get_by_test_id("stSidebar")
+    # Check for the chart & tooltip
+    chart = sidebar.get_by_test_id("stVegaLiteChart")
+    chart.hover(position={"x": 60, "y": 220})
+    tooltip = app.locator("#vg-tooltip-element")
+    expect(tooltip).to_be_visible()
 
 
 def test_check_top_level_class(app: Page):

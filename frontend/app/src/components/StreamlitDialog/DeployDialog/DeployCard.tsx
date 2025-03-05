@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,8 +42,8 @@ function DeployCard(
             borderRightWidth: sizes.borderWidth,
 
             borderTopStyle: "solid",
-            borderBottomStyle: "solid",
-            borderLeftStyle: "solid",
+            borderBottomStyle: "none",
+            borderLeftStyle: "none",
             borderRightStyle: "solid",
 
             borderTopColor: colors.borderColor,
@@ -51,10 +51,24 @@ function DeployCard(
             borderLeftColor: colors.borderColor,
             borderRightColor: colors.borderColor,
 
-            borderTopLeftRadius: radii.default,
-            borderTopRightRadius: radii.default,
-            borderBottomLeftRadius: radii.default,
-            borderBottomRightRadius: radii.default,
+            borderTopLeftRadius: "none",
+            borderTopRightRadius: "none",
+            borderBottomLeftRadius: "none",
+            borderBottomRightRadius: "none",
+
+            ":last-child": {
+              borderRightStyle: "none",
+              borderBottomRightRadius: radii.xl,
+            },
+            ":first-child": {
+              borderBottomLeftRadius: radii.xl,
+            },
+
+            [`@media (max-width: ${breakpoints.md})`]: {
+              ":last-child": {
+                borderBottomLeftRadius: radii.xl,
+              },
+            },
           },
         },
         Contents: {
@@ -63,15 +77,20 @@ function DeployCard(
             marginTop: 0,
             marginLeft: 0,
             marginRight: 0,
+            height: "100%",
           },
         },
         Body: {
           style: {
-            padding: spacing.threeXL,
+            padding: spacing.twoXL,
             marginBottom: 0,
             marginTop: 0,
             marginLeft: 0,
             marginRight: 0,
+            height: "100%",
+
+            display: "flex",
+            flexDirection: "column",
 
             [`@media (max-width: ${breakpoints.md})`]: {
               padding: spacing.xl,

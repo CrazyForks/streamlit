@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { act, renderHook } from "@testing-library/react-hooks"
+import { act, renderHook } from "@testing-library/react"
 
 import {
   AUTO_THEME_NAME,
@@ -33,8 +33,11 @@ const mockCustomThemeConfig = {
   backgroundColor: "#FFFFFF",
   secondaryBackgroundColor: "#F5F5F5",
   textColor: "#1A1D21",
+  // Option is deprecated, but we still test to ensure backwards compatibility:
   widgetBackgroundColor: "#FFFFFF",
+  // Option is deprecated, but we still test to ensure backwards compatibility:
   widgetBorderColor: "#D3DAE8",
+  // Option is deprecated, but we still test to ensure backwards compatibility:
   skeletonBackgroundColor: "#CCDDEE",
   fontFaces: [
     {
@@ -51,15 +54,15 @@ describe("useThemeManager", () => {
     // https://jestjs.io/docs/en/manual-mocks#mocking-methods-which-are-not-implemented-in-jsdom
     Object.defineProperty(window, "matchMedia", {
       writable: true,
-      value: jest.fn().mockImplementation(query => ({
+      value: vi.fn().mockImplementation(query => ({
         matches: false,
         media: query,
         onchange: null,
-        addListener: jest.fn(), // deprecated
-        removeListener: jest.fn(), // deprecated
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
-        dispatchEvent: jest.fn(),
+        addListener: vi.fn(), // deprecated
+        removeListener: vi.fn(), // deprecated
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
       })),
     })
   })
@@ -170,7 +173,7 @@ describe("useThemeManager", () => {
     const updatedTheme: ThemeConfig = themeManager2.activeTheme
 
     expect(updatedTheme.name).toBe(CUSTOM_THEME_NAME)
-    expect(updatedTheme.emotion.genericColors.primary).toBe(
+    expect(updatedTheme.emotion.colors.primary).toBe(
       mockCustomThemeConfig.primaryColor
     )
 

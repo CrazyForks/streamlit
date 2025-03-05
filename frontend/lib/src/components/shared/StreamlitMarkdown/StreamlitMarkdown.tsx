@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,10 @@ import React, {
   CSSProperties,
   FunctionComponent,
   HTMLProps,
-  PureComponent,
+  memo,
   ReactElement,
   ReactNode,
+  useContext,
 } from "react"
 
 import { visit } from "unist-util-visit"
@@ -43,16 +44,20 @@ import remarkGfm from "remark-gfm"
 import { findAndReplace } from "mdast-util-find-and-replace"
 import xxhash from "xxhashjs"
 
-import StreamlitSyntaxHighlighter from "@streamlit/lib/src/components/elements/CodeBlock/StreamlitSyntaxHighlighter"
-import IsDialogContext from "@streamlit/lib/src/components/core/IsDialogContext"
-import IsSidebarContext from "@streamlit/lib/src/components/core/IsSidebarContext"
-import ErrorBoundary from "@streamlit/lib/src/components/shared/ErrorBoundary"
-import { InlineTooltipIcon } from "@streamlit/lib/src/components/shared/TooltipIcon"
+import StreamlitSyntaxHighlighter from "~lib/components/elements/CodeBlock/StreamlitSyntaxHighlighter"
+import { StyledInlineCode } from "~lib/components/elements/CodeBlock/styled-components"
+import IsDialogContext from "~lib/components/core/IsDialogContext"
+import IsSidebarContext from "~lib/components/core/IsSidebarContext"
+import ErrorBoundary from "~lib/components/shared/ErrorBoundary"
+import { InlineTooltipIcon } from "~lib/components/shared/TooltipIcon"
 import {
+  convertRemToPx,
+  EmotionTheme,
   getMarkdownBgColors,
   getMarkdownTextColors,
-} from "@streamlit/lib/src/theme"
-import { LibContext } from "@streamlit/lib/src/components/core/LibContext"
+} from "~lib/theme"
+import { LibContext } from "~lib/components/core/LibContext"
+import streamlitLogo from "~lib/assets/img/streamlit-logo/streamlit-mark-color.svg"
 
 import {
   StyledHeadingActionElements,
@@ -155,6 +160,7 @@ const HeaderActionElements: FunctionComponent<HeadingActionElements> = ({
   help,
   hideAnchor,
 }) => {
+  const theme: EmotionTheme = useTheme()
   if (!help && hideAnchor) {
     return <></>
   }
@@ -164,7 +170,8 @@ const HeaderActionElements: FunctionComponent<HeadingActionElements> = ({
       {help && <InlineTooltipIcon content={help} />}
       {elementId && !hideAnchor && (
         <StyledLinkIcon href={`#${elementId}`}>
-          <LinkIcon size="18" />
+          {/* Convert size to px because using rem works but logs a console error (at least on webkit) */}
+          <LinkIcon size={convertRemToPx(theme.iconSizes.base)} />
         </StyledLinkIcon>
       )}
     </StyledHeadingActionElements>
@@ -319,9 +326,9 @@ export const CustomCodeTag: FunctionComponent<
       {codeText}
     </StreamlitSyntaxHighlighter>
   ) : (
-    <code className={className} {...omit(props, "node")}>
+    <StyledInlineCode className={className} {...omit(props, "node")}>
       {children}
-    </code>
+    </StyledInlineCode>
   )
 }
 
@@ -355,8 +362,8 @@ export function RenderedMarkdown({
     h6: CustomHeading,
     ...(overrideComponents || {}),
   }
-  const theme = useTheme()
-  const { red, orange, yellow, green, blue, violet, purple, gray } =
+  const theme: EmotionTheme = useTheme()
+  const { red, orange, yellow, green, blue, violet, purple, gray, primary } =
     getMarkdownTextColors(theme)
   const {
     redbg,
@@ -367,6 +374,7 @@ export function RenderedMarkdown({
     violetbg,
     purplebg,
     graybg,
+    primarybg,
   } = getMarkdownBgColors(theme)
   const colorMapping = new Map(
     Object.entries({
@@ -377,6 +385,7 @@ export function RenderedMarkdown({
       orange: `color: ${orange}`,
       gray: `color: ${gray}`,
       grey: `color: ${gray}`,
+      primary: `color: ${primary}`,
       // Gradient from red, orange, yellow, green, blue, violet, purple
       rainbow: `color: transparent; background-clip: text; -webkit-background-clip: text; background-image: linear-gradient(to right,
         ${red}, ${orange}, ${yellow}, ${green}, ${blue}, ${violet}, ${purple});`,
@@ -387,15 +396,27 @@ export function RenderedMarkdown({
       "orange-background": `background-color: ${orangebg}`,
       "gray-background": `background-color: ${graybg}`,
       "grey-background": `background-color: ${graybg}`,
+      "primary-background": `background-color: ${primarybg}`,
       // Gradient from red, orange, yellow, green, blue, violet, purple
       "rainbow-background": `background: linear-gradient(to right,
         ${redbg}, ${orangebg}, ${yellowbg}, ${greenbg}, ${bluebg}, ${violetbg}, ${purplebg});`,
     })
   )
-  function remarkColoring() {
+  function remarkColoringAndSmall() {
     return (tree: any) => {
       visit(tree, "textDirective", (node, _index, _parent) => {
         const nodeName = String(node.name)
+
+        // Handle small text directive
+        if (nodeName === "small") {
+          const data = node.data || (node.data = {})
+          data.hName = "span"
+          data.hProperties = data.hProperties || {}
+          data.hProperties.style = `font-size: ${theme.fontSizes.sm};`
+          return
+        }
+
+        // Handle color directives
         if (colorMapping.has(nodeName)) {
           const data = node.data || (node.data = {})
           const style = colorMapping.get(nodeName)
@@ -410,14 +431,16 @@ export function RenderedMarkdown({
             data.hProperties.className =
               (data.hProperties.className || "") + " has-background-color"
           }
-        } else {
-          // Workaround to convert unsupported text directives to plain text to avoid them being
-          // ignored / not rendered. See https://github.com/streamlit/streamlit/issues/8726,
-          // https://github.com/streamlit/streamlit/issues/5968
-          node.type = "text"
-          node.value = `:${nodeName}`
-          node.data = {}
+          return
         }
+
+        // Handle unsupported directives
+        // We convert unsupported text directives to plain text to avoid them being
+        // ignored / not rendered. See https://github.com/streamlit/streamlit/issues/8726,
+        // https://github.com/streamlit/streamlit/issues/5968
+        node.type = "text"
+        node.value = `:${nodeName}`
+        node.data = {}
       })
     }
   }
@@ -433,15 +456,19 @@ export function RenderedMarkdown({
             hProperties: {
               role: "img",
               ariaLabel: iconName + " icon",
+              // Prevent the icon text from being translated
+              // this would break the icon display in the UI.
+              // https://github.com/streamlit/streamlit/issues/10168
+              translate: "no",
               style: {
                 display: "inline-block",
-                fontFamily: "Material Symbols Rounded",
+                fontFamily: theme.genericFonts.iconFont,
+                fontWeight: theme.fontWeights.normal,
                 // Disable selection for copying it as text.
                 // Allowing this leads to copying the underlying icon name,
                 // which can be confusing / unexpected.
                 userSelect: "none",
                 verticalAlign: "bottom",
-                fontWeight: "normal",
                 whiteSpace: "nowrap",
                 wordWrap: "normal",
               },
@@ -460,13 +487,89 @@ export function RenderedMarkdown({
     }
   }
 
+  function remarkStreamlitLogo() {
+    return (tree: any) => {
+      function replaceStreamlit(): any {
+        return {
+          type: "text",
+          value: "",
+          data: {
+            hName: "img",
+            hProperties: {
+              src: streamlitLogo,
+              alt: "Streamlit logo",
+              style: {
+                display: "inline-block",
+                // Disable selection for copying it as text.
+                // Allowing this leads to copying the alt text,
+                // which can be confusing / unexpected.
+                userSelect: "none",
+                height: "0.75em",
+                verticalAlign: "baseline",
+                // The base of the Streamlit logo is curved, so move it down a bit to
+                // make it look aligned with the text.
+                // eslint-disable-next-line streamlit-custom/no-hardcoded-theme-values
+                marginBottom: "-0.05ex",
+              },
+            },
+          },
+        }
+      }
+      findAndReplace(tree, [[/:streamlit:/g, replaceStreamlit]])
+      return tree
+    }
+  }
+
+  function remarkTypographicalSymbols() {
+    return (tree: any) => {
+      visit(tree, (node, index, parent) => {
+        if (
+          parent &&
+          (parent.type === "link" || parent.type === "linkReference")
+        ) {
+          // Don't replace symbols in links.
+          // Note that remark extensions are not applied in code blocks and latex
+          // formulas, so we don't need to worry about them here.
+          return
+        }
+
+        if (node.type === "text" && node.value) {
+          // Only replace symbols wrapped in spaces, so it's a bit safer in case the
+          // symbols are used as part of a word or longer string of symbols.
+          const replacements = [
+            [/(^|\s)<->(\s|$)/g, "$1↔$2"],
+            [/(^|\s)->(\s|$)/g, "$1→$2"],
+            [/(^|\s)<-(\s|$)/g, "$1←$2"],
+            [/(^|\s)--(\s|$)/g, "$1—$2"],
+            [/(^|\s)>=(\s|$)/g, "$1≥$2"],
+            [/(^|\s)<=(\s|$)/g, "$1≤$2"],
+            [/(^|\s)~=(\s|$)/g, "$1≈$2"],
+          ]
+
+          let newValue = node.value
+          for (const [pattern, replacement] of replacements) {
+            newValue = newValue.replace(pattern, replacement as string)
+          }
+
+          if (newValue !== node.value) {
+            node.value = newValue
+          }
+        }
+      })
+
+      return tree
+    }
+  }
+
   const plugins = [
     remarkMathPlugin,
     remarkEmoji,
     remarkGfm,
     remarkDirective,
-    remarkColoring,
+    remarkColoringAndSmall,
     remarkMaterialIcons,
+    remarkStreamlitLogo,
+    remarkTypographicalSymbols,
   ]
 
   const rehypePlugins: PluggableList = [
@@ -481,8 +584,8 @@ export function RenderedMarkdown({
 
   // Sets disallowed markdown for widget labels
   const disallowed = [
-    // Restricts images, table elements, headings, unordered/ordered lists, task lists, horizontal rules, & blockquotes
-    "img",
+    // Restricts table elements, headings, unordered/ordered lists, task lists, horizontal rules, & blockquotes
+    // Note that images are allowed but have a max height equal to the text height
     "table",
     "thead",
     "tbody",
@@ -526,55 +629,39 @@ export function RenderedMarkdown({
  * Wraps the <ReactMarkdown> component to include our standard
  * renderers and AST plugins (for syntax highlighting, HTML support, etc).
  */
-class StreamlitMarkdown extends PureComponent<Props> {
-  static contextType = IsSidebarContext
+const StreamlitMarkdown: React.FC<Props> = ({
+  source,
+  allowHTML,
+  style,
+  isCaption,
+  isLabel,
+  boldLabel,
+  largerLabel,
+  disableLinks,
+  isToast,
+}) => {
+  const isInSidebar = useContext(IsSidebarContext)
+  const isInDialog = useContext(IsDialogContext)
 
-  context!: React.ContextType<typeof IsSidebarContext>
-
-  public componentDidCatch = (): void => {
-    const { source } = this.props
-
-    throw Object.assign(new Error(), {
-      name: "Error parsing Markdown or HTML in this string",
-      message: <p>{source}</p>,
-      stack: null,
-    })
-  }
-
-  public render(): ReactNode {
-    const {
-      source,
-      allowHTML,
-      style,
-      isCaption,
-      isLabel,
-      boldLabel,
-      largerLabel,
-      disableLinks,
-      isToast,
-    } = this.props
-    const isInSidebar = this.context
-
-    return (
-      <StyledStreamlitMarkdown
-        isCaption={Boolean(isCaption)}
-        isInSidebar={isInSidebar}
+  return (
+    <StyledStreamlitMarkdown
+      isCaption={Boolean(isCaption)}
+      isInSidebarOrDialog={isInSidebar || isInDialog}
+      isLabel={isLabel}
+      boldLabel={boldLabel}
+      largerLabel={largerLabel}
+      isToast={isToast}
+      style={style}
+      data-testid={isCaption ? "stCaptionContainer" : "stMarkdownContainer"}
+    >
+      <RenderedMarkdown
+        source={source}
+        allowHTML={allowHTML}
         isLabel={isLabel}
-        boldLabel={boldLabel}
-        largerLabel={largerLabel}
-        isToast={isToast}
-        style={style}
-        data-testid={isCaption ? "stCaptionContainer" : "stMarkdownContainer"}
-      >
-        <RenderedMarkdown
-          source={source}
-          allowHTML={allowHTML}
-          isLabel={isLabel}
-          disableLinks={disableLinks}
-        />
-      </StyledStreamlitMarkdown>
-    )
-  }
+        disableLinks={disableLinks}
+      />
+    </StyledStreamlitMarkdown>
+  )
 }
 
 interface LinkProps {
@@ -610,4 +697,4 @@ export function LinkWithTargetBlank(props: LinkProps): ReactElement {
   )
 }
 
-export default StreamlitMarkdown
+export default memo(StreamlitMarkdown)

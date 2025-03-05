@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -194,12 +194,12 @@ And if you're using Streamlit Cloud, add "pyarrow" to your requirements.txt."""
                 return ui_value
 
             component_state = register_widget(
-                element_type="component_instance",
-                element_proto=element.component_instance,
+                element.component_instance.id,
                 deserializer=deserialize_component,
                 serializer=lambda x: x,
                 ctx=ctx,
                 on_change_handler=on_change,
+                value_type="json_value",
             )
             widget_value = component_state.value
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,37 +14,49 @@
  * limitations under the License.
  */
 
-import React, { ReactElement } from "react"
+import React, {
+  memo,
+  ReactElement,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
 
 import { Minus, Plus } from "@emotion-icons/open-iconic"
-import { withTheme } from "@emotion/react"
-import { sprintf } from "sprintf-js"
+import { useTheme } from "@emotion/react"
 import { Input as UIInput } from "baseui/input"
 import uniqueId from "lodash/uniqueId"
+
+import { NumberInput as NumberInputProto } from "@streamlit/protobuf"
 
 import {
   isInForm,
   isNullOrUndefined,
   labelVisibilityProtoValueToEnum,
   notNullOrUndefined,
-} from "@streamlit/lib/src/util/utils"
-import { FormClearHelper } from "@streamlit/lib/src/components/widgets/Form"
-import { logWarning } from "@streamlit/lib/src/util/log"
-import { NumberInput as NumberInputProto } from "@streamlit/lib/src/proto"
-import {
-  Source,
-  WidgetStateManager,
-} from "@streamlit/lib/src/WidgetStateManager"
-import TooltipIcon from "@streamlit/lib/src/components/shared/TooltipIcon"
-import { Placement } from "@streamlit/lib/src/components/shared/Tooltip"
-import Icon from "@streamlit/lib/src/components/shared/Icon"
-import InputInstructions from "@streamlit/lib/src/components/shared/InputInstructions/InputInstructions"
+} from "~lib/util/utils"
+import { useFormClearHelper } from "~lib/components/widgets/Form"
+import { Source, WidgetStateManager } from "~lib/WidgetStateManager"
+import TooltipIcon from "~lib/components/shared/TooltipIcon"
+import { Placement } from "~lib/components/shared/Tooltip"
+import Icon from "~lib/components/shared/Icon"
+import InputInstructions from "~lib/components/shared/InputInstructions/InputInstructions"
 import {
   StyledWidgetLabelHelp,
   WidgetLabel,
-} from "@streamlit/lib/src/components/widgets/BaseWidget"
-import { EmotionTheme } from "@streamlit/lib/src/theme"
+} from "~lib/components/widgets/BaseWidget"
+import { EmotionTheme } from "~lib/theme"
+import { useResizeObserver } from "~lib/hooks/useResizeObserver"
 
+import {
+  canDecrement,
+  canIncrement,
+  formatValue,
+  getInitialValue,
+  getStep,
+} from "./utils"
 import {
   StyledInputContainer,
   StyledInputControl,
@@ -52,127 +64,21 @@ import {
   StyledInstructionsContainer,
 } from "./styled-components"
 
-/**
- * Return a string property from an element. If the string is
- * null or empty, return undefined instead.
- */
-function getNonEmptyString(
-  value: string | null | undefined
-): string | undefined {
-  return isNullOrUndefined(value) || value === "" ? undefined : value
-}
-
-/**
- * This function returns the initial value for the NumberInput widget
- * via the widget manager.
- */
-const getInitialValue = (
-  props: Pick<Props, "element" | "widgetMgr">
-): number | null => {
-  const isIntData = props.element.dataType === NumberInputProto.DataType.INT
-  const storedValue = isIntData
-    ? props.widgetMgr.getIntValue(props.element)
-    : props.widgetMgr.getDoubleValue(props.element)
-  return storedValue ?? props.element.default ?? null
-}
-
-const getStep = ({
-  step,
-  dataType,
-}: Pick<NumberInputProto, "step" | "dataType">): number => {
-  if (step) {
-    return step
-  }
-  if (dataType === NumberInputProto.DataType.INT) {
-    return 1
-  }
-  return 0.01
-}
-
-/**
- * Utilizes the sprintf library to format a number value
- * according to a given format string.
- */
-export const formatValue = ({
-  value,
-  format,
-  step,
-  dataType,
-}: {
-  value: number | null
-  format?: string | null
-  step?: number
-  dataType: NumberInputProto.DataType
-}): string | null => {
-  if (isNullOrUndefined(value)) {
-    return null
-  }
-
-  let formatString = getNonEmptyString(format)
-
-  if (isNullOrUndefined(formatString) && notNullOrUndefined(step)) {
-    const strStep = step.toString()
-    if (
-      dataType === NumberInputProto.DataType.FLOAT &&
-      step !== 0 &&
-      strStep.includes(".")
-    ) {
-      const decimalPlaces = strStep.split(".")[1].length
-      formatString = `%0.${decimalPlaces}f`
-    }
-  }
-
-  if (isNullOrUndefined(formatString)) {
-    return value.toString()
-  }
-
-  try {
-    return sprintf(formatString, value)
-  } catch (e) {
-    logWarning(`Error in sprintf(${formatString}, ${value}): ${e}`)
-    return String(value)
-  }
-}
-
-export const canDecrement = (
-  value: number | null,
-  step: number,
-  min: number
-): boolean => {
-  if (isNullOrUndefined(value)) {
-    return false
-  }
-  return value - step >= min
-}
-
-export const canIncrement = (
-  value: number | null,
-  step: number,
-  max: number
-): boolean => {
-  if (isNullOrUndefined(value)) {
-    return false
-  }
-  return value + step <= max
-}
-
 export interface Props {
   disabled: boolean
   element: NumberInputProto
   widgetMgr: WidgetStateManager
-  width: number
-  theme: EmotionTheme
   fragmentId?: string
 }
 
-export const NumberInput: React.FC<Props> = ({
+const NumberInput: React.FC<Props> = ({
   disabled,
   element,
   widgetMgr,
-  width,
-  theme,
   fragmentId,
 }: Props): ReactElement => {
+  const theme: EmotionTheme = useTheme()
+
   const {
     dataType: elementDataType,
     id: elementId,
@@ -183,32 +89,40 @@ export const NumberInput: React.FC<Props> = ({
   const min = element.hasMin ? element.min : -Infinity
   const max = element.hasMax ? element.max : +Infinity
 
-  const [step, setStep] = React.useState<number>(getStep(element))
+  const {
+    values: [width],
+    elementRef,
+  } = useResizeObserver(useMemo(() => ["width"], []))
+
+  const [step, setStep] = useState<number>(getStep(element))
   const initialValue = getInitialValue({ element, widgetMgr })
-  const [dirty, setDirty] = React.useState(false)
-  const [value, setValue] = React.useState<number | null>(initialValue)
-  const [formattedValue, setFormattedValue] = React.useState<string | null>(
+  const [dirty, setDirty] = useState(false)
+  const [value, setValue] = useState<number | null>(initialValue)
+  const [formattedValue, setFormattedValue] = useState<string | null>(
     formatValue({ value: initialValue, ...element, step })
   )
-  const [isFocused, setIsFocused] = React.useState(false)
-  const inputRef = React.useRef<HTMLInputElement | HTMLTextAreaElement>(null)
-  const formClearHelper = React.useRef(new FormClearHelper())
-  const id = React.useRef(uniqueId("number_input_"))
+  const [isFocused, setIsFocused] = useState(false)
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null)
+  const id = useRef(uniqueId("number_input_"))
 
   const canDec = canDecrement(value, step, min)
   const canInc = canIncrement(value, step, max)
 
   const inForm = isInForm({ formId: elementFormId })
-  // Allows form submission on Enter & displays Enter instructions
-  const allowFormEnterToSubmit =
-    widgetMgr.allowFormEnterToSubmit(elementFormId)
+  // Allows form submission on Enter & displays Enter instructions, or if not in form and state is dirty
+  const allowEnterToSubmit = inForm
+    ? widgetMgr.allowFormEnterToSubmit(elementFormId)
+    : dirty
+  // Hide input instructions for small widget sizes.
+  const shouldShowInstructions =
+    isFocused && width > theme.breakpoints.hideWidgetDetails
 
-  // update the step if the props change
-  React.useEffect(() => {
+  // Update the step if the props change
+  useEffect(() => {
     setStep(getStep({ step: element.step, dataType: element.dataType }))
   }, [element.dataType, element.step])
 
-  const commitValue = React.useCallback(
+  const commitValue = useCallback(
     ({ value, source }: { value: number | null; source: Source }) => {
       if (notNullOrUndefined(value) && (min > value || value > max)) {
         inputRef.current?.reportValidity()
@@ -263,41 +177,38 @@ export const NumberInput: React.FC<Props> = ({
     ]
   )
 
-  const onBlur = (): void => {
+  const onBlur = useCallback((): void => {
     if (dirty) {
       commitValue({ value, source: { fromUi: true } })
     }
     setIsFocused(false)
-  }
+  }, [dirty, value, commitValue])
 
-  const onFocus = (): void => {
+  const onFocus = useCallback((): void => {
     setIsFocused(true)
-  }
+  }, [])
 
-  const updateFromProtobuf = (): void => {
+  const updateFromProtobuf = useCallback((): void => {
     const { value } = element
     element.setValue = false
     setValue(value ?? null)
     setFormattedValue(formatValue({ value: value ?? null, ...element, step }))
     commitValue({ value: value ?? null, source: { fromUi: false } })
-  }
+  }, [element, step, commitValue])
 
   // on component mount, we want to update the value from protobuf if setValue is true, otherwise commit current value
-  React.useEffect(() => {
-    const formClearHelperCopy = formClearHelper.current
+  useEffect(() => {
     if (element.setValue) {
       updateFromProtobuf()
     } else {
       commitValue({ value, source: { fromUi: false } })
     }
 
-    return () => {
-      formClearHelperCopy.disconnect()
-    }
-
     // I don't want to run this effect on every render, only on mount.
     // Additionally, it's okay if commitValue changes, because we only call
     // it once in the beginning anyways.
+    // TODO: Update to match React best practices
+    // eslint-disable-next-line react-compiler/react-compiler
     /* eslint-disable react-hooks/exhaustive-deps */
   }, [])
 
@@ -308,14 +219,17 @@ export const NumberInput: React.FC<Props> = ({
 
   const clearable = isNullOrUndefined(element.default) && !disabled
 
-  formClearHelper.current.manageFormClearListener(
+  const onFormCleared = useCallback(() => {
+    const newValue = element.default ?? null
+    setValue(newValue)
+    commitValue({ value: newValue, source: { fromUi: true } })
+  }, [element])
+
+  useFormClearHelper({
+    element,
     widgetMgr,
-    element.formId,
-    () => {
-      setValue(element.default ?? null)
-      commitValue({ value, source: { fromUi: true } })
-    }
-  )
+    onFormCleared,
+  })
 
   const onChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -341,21 +255,21 @@ export const NumberInput: React.FC<Props> = ({
     }
   }
 
-  const increment = React.useCallback(() => {
+  const increment = useCallback(() => {
     if (canInc) {
       setDirty(true)
       commitValue({ value: (value ?? min) + step, source: { fromUi: true } })
     }
   }, [value, min, step, canInc])
 
-  const decrement = React.useCallback(() => {
+  const decrement = useCallback(() => {
     if (canDec) {
       setDirty(true)
       commitValue({ value: (value ?? max) - step, source: { fromUi: true } })
     }
   }, [value, max, step, canDec])
 
-  const onKeyDown = React.useCallback(
+  const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
       const { key } = e
 
@@ -374,33 +288,25 @@ export const NumberInput: React.FC<Props> = ({
     [increment, decrement]
   )
 
-  const onKeyPress = React.useCallback(
+  const onKeyPress = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
       if (e.key === "Enter") {
         if (dirty) {
           commitValue({ value, source: { fromUi: true } })
         }
-        if (allowFormEnterToSubmit) {
+        if (widgetMgr.allowFormEnterToSubmit(elementFormId)) {
           widgetMgr.submitForm(elementFormId, fragmentId)
         }
       }
     },
-    [
-      dirty,
-      value,
-      commitValue,
-      widgetMgr,
-      elementFormId,
-      fragmentId,
-      allowFormEnterToSubmit,
-    ]
+    [dirty, value, commitValue, widgetMgr, elementFormId, fragmentId]
   )
 
   return (
     <div
       className="stNumberInput"
       data-testid="stNumberInput"
-      style={{ width }}
+      ref={elementRef}
     >
       <WidgetLabel
         label={element.label}
@@ -428,29 +334,32 @@ export const NumberInput: React.FC<Props> = ({
           inputRef={inputRef}
           value={formattedValue ?? ""}
           placeholder={element.placeholder}
-          onBlur={() => onBlur()}
-          onFocus={() => onFocus()}
-          onChange={e => onChange(e)}
-          onKeyPress={e => onKeyPress(e)}
-          onKeyDown={e => onKeyDown(e)}
+          onBlur={onBlur}
+          onFocus={onFocus}
+          onChange={onChange}
+          onKeyPress={onKeyPress}
+          onKeyDown={onKeyDown}
           clearable={clearable}
           clearOnEscape={clearable}
           disabled={disabled}
           aria-label={element.label}
           id={id.current}
           overrides={{
+            ClearIconContainer: {
+              style: {
+                padding: 0,
+              },
+            },
             ClearIcon: {
               props: {
                 overrides: {
                   Svg: {
                     style: {
                       color: theme.colors.darkGray,
-                      // Since the close icon is an SVG, and we can't control its viewbox nor its attributes,
-                      // Let's use a scale transform effect to make it bigger.
-                      // The width property only enlarges its bounding box, so it's easier to click.
-                      transform: "scale(1.4)",
-                      width: theme.spacing.twoXL,
-                      marginRight: "-1.25em",
+                      // setting this width and height makes the clear-icon align with dropdown arrows of other input fields
+                      padding: theme.spacing.threeXS,
+                      height: theme.sizes.clearIconSize,
+                      width: theme.sizes.clearIconSize,
                       ":hover": {
                         fill: theme.colors.bodyText,
                       },
@@ -465,6 +374,11 @@ export const NumberInput: React.FC<Props> = ({
                 step: step,
                 min: min,
                 max: max,
+                // We specify the type as "number" to have numeric keyboard on mobile devices.
+                // We also set inputMode to "" since by default BaseWeb sets "text",
+                // and for "decimal" / "numeric" IOS shows keyboard without a minus sign.
+                type: "number",
+                inputMode: "",
               },
               style: {
                 lineHeight: theme.lineHeights.inputWidget,
@@ -482,15 +396,18 @@ export const NumberInput: React.FC<Props> = ({
               }),
             },
             Root: {
-              style: () => ({
+              style: {
                 // Baseweb requires long-hand props, short-hand leads to weird bugs & warnings.
                 borderTopRightRadius: 0,
                 borderBottomRightRadius: 0,
+                borderTopLeftRadius: 0,
+                borderBottomLeftRadius: 0,
                 borderLeftWidth: 0,
                 borderRightWidth: 0,
                 borderTopWidth: 0,
                 borderBottomWidth: 0,
-              }),
+                paddingRight: 0,
+              },
             },
           }}
         />
@@ -506,7 +423,7 @@ export const NumberInput: React.FC<Props> = ({
               <Icon
                 content={Minus}
                 size="xs"
-                color={canDec ? "inherit" : "disabled"}
+                color={canDec ? "inherit" : theme.colors.disabled}
               />
             </StyledInputControl>
             <StyledInputControl
@@ -518,20 +435,19 @@ export const NumberInput: React.FC<Props> = ({
               <Icon
                 content={Plus}
                 size="xs"
-                color={canInc ? "inherit" : "disabled"}
+                color={canInc ? "inherit" : theme.colors.disabled}
               />
             </StyledInputControl>
           </StyledInputControls>
         )}
       </StyledInputContainer>
-      {/* Hide the "Please enter to apply" text in small widget sizes */}
-      {width > theme.breakpoints.hideWidgetDetails && (
+      {shouldShowInstructions && (
         <StyledInstructionsContainer clearable={clearable}>
           <InputInstructions
             dirty={dirty}
             value={formattedValue ?? ""}
             inForm={inForm}
-            allowEnterToSubmit={allowFormEnterToSubmit || !inForm}
+            allowEnterToSubmit={allowEnterToSubmit}
           />
         </StyledInstructionsContainer>
       )}
@@ -539,4 +455,4 @@ export const NumberInput: React.FC<Props> = ({
   )
 }
 
-export default withTheme(NumberInput)
+export default memo(NumberInput)

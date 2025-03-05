@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,12 +15,14 @@ import re
 
 from playwright.sync_api import Page, expect
 
+from e2e_playwright.conftest import wait_until
 from e2e_playwright.shared.app_utils import (
     click_button,
     expect_exception,
     expect_no_exception,
     get_expander,
 )
+from e2e_playwright.shared.react18_utils import wait_for_react_stability
 
 
 def test_wide_layout(app: Page):
@@ -39,12 +41,42 @@ def test_wide_layout(app: Page):
     expect(app_view_container).to_have_attribute("data-layout", "wide")
 
     expect(expander_container).to_be_visible()
+    # Wait until the expander width becomes greater than the narrow width.
+    wait_until(
+        app,
+        lambda: (bbox := expander_container.bounding_box()) is not None
+        and bbox["width"] > narrow_expander_width,
+    )
 
+
+def test_wide_layout_with_small_viewport(app: Page):
+    """Test that the wide layout is using the same width as the centered layout
+    when the viewport is narrow."""
+
+    app.set_viewport_size({"width": 640, "height": 800})
+
+    app_view_container = app.get_by_test_id("stAppViewContainer")
+    # The default layout is "centered":
+    expect(app_view_container).to_have_attribute("data-layout", "narrow")
+
+    expander_container = get_expander(app, "Expander in main")
+    expect(expander_container).to_be_visible()
+    wait_for_react_stability(app)
     expander_dimensions = expander_container.bounding_box()
     assert expander_dimensions is not None
+    narrow_expander_width = expander_dimensions["width"]
 
-    # Its fine to use assert here since we don't need to wait for this to be true:
-    assert narrow_expander_width < expander_dimensions["width"]
+    click_button(app, "Wide Layout")
+    expect(app).to_have_title("Wide Layout")
+    app_view_container = app.get_by_test_id("stAppViewContainer")
+    expect(app_view_container).to_have_attribute("data-layout", "wide")
+    wait_for_react_stability(app)
+    # Wait until the expander width equals the narrow width.
+    wait_until(
+        app,
+        lambda: (bbox := expander_container.bounding_box()) is not None
+        and bbox["width"] == narrow_expander_width,
+    )
 
 
 def test_centered_layout(app: Page):
@@ -93,7 +125,7 @@ def test_page_icon_with_emoji_shortcode(app: Page):
     favicon = app.locator("link[rel='shortcut icon']")
     expect(favicon).to_have_attribute(
         "href",
-        "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f988.png",
+        "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦈</text></svg>",
     )
     expect_no_exception(app)
 
@@ -104,19 +136,25 @@ def test_page_icon_with_emoji_symbol(app: Page):
     favicon = app.locator("link[rel='shortcut icon']")
     expect(favicon).to_have_attribute(
         "href",
-        "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f419.png",
+        "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐙</text></svg>",
     )
+
+
+def test_page_icon_with_local_icon_str(app: Page):
+    click_button(app, "Page Config With Local Icon Str")
+    expect(app).to_have_title("With Local Icon Str")
+    favicon_element = app.locator("link[rel='shortcut icon']")
+    expect(favicon_element).to_have_count(1)
+    expect(favicon_element).to_have_attribute("href", re.compile(r".*\.png$"))
+    expect_no_exception(app)
 
 
 def test_page_icon_with_local_icon(app: Page):
-    click_button(app, "Page Config With Local Icon")
-    expect(app).to_have_title("With Local Icon")
+    click_button(app, "Page Config With Local Icon Path")
+    expect(app).to_have_title("With Local Icon Path")
     favicon_element = app.locator("link[rel='shortcut icon']")
     expect(favicon_element).to_have_count(1)
-    expect(favicon_element).to_have_attribute(
-        "href",
-        re.compile(r"d1e92a291d26c1e0cb9b316a93c929b3be15899677ef3bc6e3bf3573\.png"),
-    )
+    expect(favicon_element).to_have_attribute("href", re.compile(r".*\.png$"))
     expect_no_exception(app)
 
 

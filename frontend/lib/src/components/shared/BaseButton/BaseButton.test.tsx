@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 
 import React from "react"
 
-import { fireEvent, screen } from "@testing-library/react"
-import "@testing-library/jest-dom"
+import { screen } from "@testing-library/react"
+import { userEvent } from "@testing-library/user-event"
 
-import { render } from "@streamlit/lib/src/test_util"
-import { lightTheme } from "@streamlit/lib/src/theme"
+import { render } from "~lib/test_util"
+import { lightTheme } from "~lib/theme"
 
 import BaseButton, {
   BaseButtonKind,
@@ -90,11 +90,12 @@ describe("Button element", () => {
     expect(buttonWidget).toBeDisabled()
   })
 
-  it("calls onClick when button is clicked", () => {
-    const onClick = jest.fn()
+  it("calls onClick when button is clicked", async () => {
+    const user = userEvent.setup()
+    const onClick = vi.fn()
     render(<BaseButton {...getProps({ onClick })}>Hello</BaseButton>)
     const buttonWidget = screen.getByRole("button")
-    fireEvent.click(buttonWidget)
+    await user.click(buttonWidget)
 
     expect(onClick).toHaveBeenCalled()
   })
@@ -111,14 +112,5 @@ describe("Button element", () => {
 
     const buttonWidget = screen.getByRole("button")
     expect(buttonWidget).toHaveStyle("width: 100%")
-  })
-
-  it("renders use container width buttons correctly when explicit width passed", () => {
-    // Fluid width is a number when the button has a help tooltip
-    // (need to pass explicit width down otherwise tooltip breaks use_container_width=True)
-    render(<BaseButton {...getProps({ fluidWidth: 250 })}>Hello</BaseButton>)
-
-    const buttonWidget = screen.getByRole("button")
-    expect(buttonWidget).toHaveStyle("width: 250px")
   })
 })

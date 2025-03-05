@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,11 +29,9 @@ import groupBy from "lodash/groupBy"
 // isMobile field sanely.
 import * as reactDeviceDetect from "react-device-detect"
 
-import {
-  IAppPage,
-  localStorageAvailable,
-  StreamlitEndpoints,
-} from "@streamlit/lib"
+import { localStorageAvailable } from "@streamlit/utils"
+import { StreamlitEndpoints } from "@streamlit/connection"
+import { IAppPage } from "@streamlit/protobuf"
 import { AppContext } from "@streamlit/app/src/components/AppContext"
 
 import NavSection from "./NavSection"
@@ -161,9 +159,9 @@ const SidebarNav = ({
     const nextState = !expanded
     if (localStorageAvailable()) {
       if (nextState) {
-        localStorage.setItem("sidebarNavState", "expanded")
+        window.localStorage.setItem("sidebarNavState", "expanded")
       } else {
-        localStorage.removeItem("sidebarNavState")
+        window.localStorage.removeItem("sidebarNavState")
       }
     }
     setExpanded(nextState)

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,8 +32,8 @@ export const StyledEllipsizedDiv = styled.div({
 export const StyledTooltipContentWrapper = styled.div(({ theme }) => ({
   boxSizing: "border-box",
   fontSize: `${theme.fontSizes.sm}`,
-  maxWidth: `calc(${theme.sizes.contentMaxWidth} - 4rem)`,
-  maxHeight: "300px",
+  maxWidth: `calc(${theme.sizes.contentMaxWidth} - 2 * ${theme.spacing.threeXL})`,
+  maxHeight: theme.sizes.maxTooltipHeight,
   overflow: ["auto", "overlay"],
   padding: `${theme.spacing.xs} ${theme.spacing.md}`,
 

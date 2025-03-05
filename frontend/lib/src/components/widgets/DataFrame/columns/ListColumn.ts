@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 import { BubbleCell, GridCell, GridCellKind } from "@glideapps/glide-data-grid"
 
-import { isNullOrUndefined } from "@streamlit/lib/src/util/utils"
+import { isNullOrUndefined } from "~lib/util/utils"
 
 import {
   BaseColumn,
@@ -35,7 +35,7 @@ function ListColumn(props: BaseColumnProps): BaseColumn {
     data: [],
     allowOverlay: true,
     contentAlign: props.contentAlignment,
-    style: props.isIndex ? "faded" : "normal",
+    style: "normal",
   } as BubbleCell
 
   return {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,25 +17,23 @@
 import styled from "@emotion/styled"
 import { transparentize } from "color2k"
 
-import { StyledMaterialIcon } from "@streamlit/lib/src/components/shared/Icon/Material/styled-components"
-import {
-  getWrappedHeadersStyle,
-  hasLightBackgroundColor,
-} from "@streamlit/lib/src/theme/utils"
+import { hasLightBackgroundColor } from "@streamlit/lib"
 
-// Check for custom text color & handle colors in SidebarNav accordingly
-const conditionalCustomColor = (
-  theme: any,
-  customThemeColor: string,
-  defaultThemeColor: string
-): string => {
-  let customTextColor = theme.colors.bodyText !== theme.colors.gray10
-
-  if (hasLightBackgroundColor(theme)) {
-    customTextColor = theme.colors.bodyText !== theme.colors.gray85
+/**
+ * Returns the color of the text in the sidebar nav.
+ *
+ * @param theme The theme to use.
+ * @param isActive Whether the nav text should show as active.
+ * @returns The color of the text in the sidebar nav.
+ */
+const getNavTextColor = (theme: any, isActive: boolean): string => {
+  const isLightTheme = hasLightBackgroundColor(theme)
+  if (isActive) {
+    return theme.colors.bodyText
   }
-
-  return customTextColor ? customThemeColor : defaultThemeColor
+  return isLightTheme
+    ? transparentize(theme.colors.bodyText, 0.2)
+    : transparentize(theme.colors.bodyText, 0.25)
 }
 
 export interface StyledSidebarProps {
@@ -84,22 +82,44 @@ export const StyledSidebar = styled.section<StyledSidebarProps>(
   }
 )
 
-export const StyledSidebarNavContainer = styled.div(() => ({
+export const StyledSidebarNavContainer = styled.div({
   position: "relative",
-}))
+})
 
 export const StyledSidebarNavItems = styled.ul(({ theme }) => {
   return {
     listStyle: "none",
     margin: theme.spacing.none,
     paddingBottom: theme.spacing.threeXS,
+    paddingTop: theme.spacing.none,
+    paddingRight: theme.spacing.none,
+    paddingLeft: theme.spacing.none,
   }
 })
 
-export const StyledSidebarNavLinkContainer = styled.div(() => ({
+export const StyledSidebarNavLinkContainer = styled.div({
   display: "flex",
   flexDirection: "column",
-}))
+})
+
+export interface StyledSidebarNavIconProps {
+  isActive: boolean
+}
+
+export const StyledSidebarNavIcon = styled.span<StyledSidebarNavIconProps>(
+  ({ theme, isActive }) => {
+    return {
+      display: "inline-flex",
+      // Apply a different font weight to the icon if it is active
+      // The icon is in a span element.
+      span: {
+        fontWeight: isActive
+          ? theme.fontWeights.bold
+          : theme.fontWeights.normal,
+      },
+    }
+  }
+)
 
 export interface StyledSidebarNavLinkProps {
   isActive: boolean
@@ -107,22 +127,6 @@ export interface StyledSidebarNavLinkProps {
 
 export const StyledSidebarNavLink = styled.a<StyledSidebarNavLinkProps>(
   ({ theme, isActive }) => {
-    const color = conditionalCustomColor(
-      theme,
-      theme.colors.bodyText,
-      theme.colors.navTextColor
-    )
-    const svgColor = conditionalCustomColor(
-      theme,
-      theme.colors.fadedText60,
-      theme.colors.navIconColor
-    )
-    const activeSvgColor = conditionalCustomColor(
-      theme,
-      theme.colors.bodyText,
-      theme.colors.navActiveTextColor
-    )
-
     const defaultPageLinkStyles = {
       textDecoration: "none",
       fontWeight: isActive ? theme.fontWeights.bold : theme.fontWeights.normal,
@@ -143,15 +147,8 @@ export const StyledSidebarNavLink = styled.a<StyledSidebarNavLinkProps>(
       marginBottom: theme.spacing.threeXS,
       lineHeight: theme.lineHeights.menuItem,
 
-      color,
+      color: getNavTextColor(theme, isActive),
       backgroundColor: isActive ? theme.colors.darkenedBgMix25 : "transparent",
-
-      [StyledMaterialIcon as any]: {
-        color: isActive ? activeSvgColor : svgColor,
-        fontWeight: isActive
-          ? theme.fontWeights.bold
-          : theme.fontWeights.normal,
-      },
 
       "&:hover": {
         backgroundColor: transparentize(theme.colors.darkenedBgMix25, 0.1),
@@ -178,19 +175,8 @@ export const StyledSidebarNavLink = styled.a<StyledSidebarNavLinkProps>(
 
 export const StyledSidebarLinkText = styled.span<StyledSidebarNavLinkProps>(
   ({ isActive, theme }) => {
-    const defaultColor = conditionalCustomColor(
-      theme,
-      transparentize(theme.colors.bodyText, 0.2),
-      theme.colors.navTextColor
-    )
-    const activeColor = conditionalCustomColor(
-      theme,
-      theme.colors.bodyText,
-      theme.colors.navActiveTextColor
-    )
-
     return {
-      color: isActive ? activeColor : defaultColor,
+      color: getNavTextColor(theme, isActive),
       overflow: "hidden",
       whiteSpace: "nowrap",
       textOverflow: "ellipsis",
@@ -209,8 +195,6 @@ export const StyledSidebarUserContent =
     paddingBottom: theme.sizes.sidebarTopSpace,
     paddingLeft: theme.spacing.twoXL,
     paddingRight: theme.spacing.twoXL,
-
-    ...getWrappedHeadersStyle(theme),
   }))
 
 export const StyledSidebarContent = styled.div(({}) => ({
@@ -228,6 +212,9 @@ export const StyledResizeHandle = styled.div(({ theme }) => ({
   height: "100%",
   cursor: "col-resize",
   zIndex: theme.zIndices.sidebarMobile,
+  backgroundImage: theme.showSidebarSeparator
+    ? `linear-gradient(to right, transparent 20%, ${theme.colors.fadedText20} 28%, transparent 36%)`
+    : "none",
 
   "&:hover": {
     backgroundImage: `linear-gradient(to right, transparent 20%, ${theme.colors.fadedText20} 28%, transparent 36%)`,
@@ -274,7 +261,7 @@ export const StyledLogo = styled.img<StyledLogoProps>(
     marginLeft: theme.spacing.none,
     zIndex: theme.zIndices.header,
     objectFit: "contain",
-
+    verticalAlign: "middle",
     ...(sidebarWidth && {
       // Control max width of logo so sidebar collapse button always shows (issue #8707)
       // L & R padding (twoXL) + R margin (sm) + collapse button (2.25rem)
@@ -303,21 +290,26 @@ export const StyledSidebarOpenContainer =
       alignItems: "center",
 
       [`@media print`]: {
-        position: "static",
+        position: "absolute",
+        left: 0,
+        top: 0,
+        marginTop: 0,
+
+        [`& > ${StyledLogo}`]: {
+          // Add more space to the actual app content by moving the logo a little bit more to the top.
+          // margin-bottom wouldn't work here to push the content down because the logo is absolutely positioned.
+          marginTop: 0,
+        },
       },
     })
   )
 
 export const StyledOpenSidebarButton = styled.div(({ theme }) => {
-  const color = conditionalCustomColor(
-    theme,
-    theme.colors.bodyText,
-    theme.colors.sidebarControlColor
-  )
-
   return {
     zIndex: theme.zIndices.header,
-    color,
+    color: hasLightBackgroundColor(theme)
+      ? theme.colors.fadedText60
+      : theme.colors.bodyText,
     marginTop: theme.spacing.twoXS,
 
     button: {
@@ -339,17 +331,13 @@ export interface StyledCollapseSidebarButtonProps {
 export const StyledCollapseSidebarButton =
   styled.div<StyledCollapseSidebarButtonProps>(
     ({ showSidebarCollapse, theme }) => {
-      const color = conditionalCustomColor(
-        theme,
-        theme.colors.bodyText,
-        theme.colors.sidebarControlColor
-      )
-
       return {
         display: showSidebarCollapse ? "inline" : "none",
         transition: "left 300ms",
         transitionDelay: "left 300ms",
-        color,
+        color: hasLightBackgroundColor(theme)
+          ? theme.colors.fadedText60
+          : theme.colors.bodyText,
         lineHeight: "0",
 
         [`@media print`]: {
@@ -364,17 +352,11 @@ export const StyledCollapseSidebarButton =
   )
 
 export const StyledSidebarNavSectionHeader = styled.header(({ theme }) => {
-  const color = conditionalCustomColor(
-    theme,
-    transparentize(theme.colors.bodyText, 0.15),
-    theme.colors.navTextColor
-  )
-
   return {
     fontSize: theme.fontSizes.sm,
     fontWeight: theme.fontWeights.bold,
-    color,
-    lineHeight: theme.lineHeights.table,
+    color: getNavTextColor(theme, false),
+    lineHeight: theme.lineHeights.small,
     paddingRight: theme.spacing.sm,
     marginLeft: theme.spacing.twoXL,
     marginRight: theme.spacing.twoXL,
@@ -384,21 +366,18 @@ export const StyledSidebarNavSectionHeader = styled.header(({ theme }) => {
 })
 
 export const StyledViewButton = styled.button(({ theme }) => {
-  const color = conditionalCustomColor(
-    theme,
-    theme.colors.bodyText,
-    theme.colors.navActiveTextColor
-  )
-
   return {
     fontSize: theme.fontSizes.sm,
+    fontFamily: "inherit",
     lineHeight: theme.lineHeights.base,
-    color,
+    color: getNavTextColor(theme, true),
     backgroundColor: theme.colors.transparent,
     border: "none",
     borderRadius: theme.radii.default,
     marginTop: theme.spacing.twoXS,
     marginLeft: theme.spacing.xl,
+    marginBottom: theme.spacing.none,
+    marginRight: theme.spacing.none,
     padding: `${theme.spacing.threeXS} ${theme.spacing.sm}`,
     "&:hover, &:active, &:focus": {
       border: "none",

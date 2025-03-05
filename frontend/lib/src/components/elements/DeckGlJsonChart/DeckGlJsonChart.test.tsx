@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,24 @@
  * limitations under the License.
  */
 
-import React from "react"
+import React, { FC } from "react"
 
 import JSON5 from "json5"
 import { act, screen } from "@testing-library/react"
-import { renderHook } from "@testing-library/react-hooks"
-import { PickingInfo } from "@deck.gl/core/typed"
+import { PickingInfo } from "@deck.gl/core"
+import { userEvent } from "@testing-library/user-event"
 
-import { render } from "@streamlit/lib/src/test_util"
-import { DeckGlJsonChart as DeckGlJsonChartProto } from "@streamlit/lib/src/proto"
-import { WidgetStateManager } from "@streamlit/lib/src/WidgetStateManager"
-import { mockTheme } from "@streamlit/lib/src/mocks/mockTheme"
-import "@testing-library/jest-dom"
+import { DeckGlJsonChart as DeckGlJsonChartProto } from "@streamlit/protobuf"
 
-import { DeckGlJsonChart } from "./DeckGlJsonChart"
+import {
+  render,
+  renderHook,
+} from "~lib/components/shared/ElementFullscreen/testUtils"
+import { WidgetStateManager } from "~lib/WidgetStateManager"
+import { mockTheme } from "~lib/mocks/mockTheme"
+import { ElementFullscreenContext } from "~lib/components/shared/ElementFullscreen/ElementFullscreenContext"
+import { useRequiredContext } from "~lib/hooks/useRequiredContext"
+
 import type { DeckGLProps } from "./types"
 import { useDeckGl, UseDeckGlProps } from "./useDeckGl"
 
@@ -42,9 +46,9 @@ const mockInitialViewState = {
   zoom: 6,
 }
 
-jest.mock("@streamlit/lib/src/theme", () => ({
-  ...jest.requireActual("@streamlit/lib/src/theme"),
-  hasLightBackgroundColor: jest.fn(() => false),
+vi.mock("~lib/theme", async () => ({
+  ...(await vi.importActual("~lib/theme")),
+  hasLightBackgroundColor: vi.fn(() => false),
 }))
 
 const getProps = (
@@ -81,13 +85,10 @@ const getProps = (
       json: JSON.stringify(json),
       ...elementProps,
     }),
-    width: 0,
     mapboxToken: "mapboxToken",
-    height: undefined,
-    isFullScreen: false,
     widgetMgr: new WidgetStateManager({
-      sendRerunBackMsg: jest.fn(),
-      formsDataChanged: jest.fn(),
+      sendRerunBackMsg: vi.fn(),
+      formsDataChanged: vi.fn(),
     }),
     fragmentId: "myFragmentId",
   }
@@ -103,17 +104,6 @@ const getUseDeckGlProps = (
     theme: mockTheme.emotion,
   }
 }
-
-describe("DeckGlJsonChart element", () => {
-  it("renders without crashing", () => {
-    const props = getProps()
-
-    render(<DeckGlJsonChart {...props} />)
-
-    const deckGlJsonChart = screen.getByTestId("stDeckGlJsonChart")
-    expect(deckGlJsonChart).toBeVisible()
-  })
-})
 
 describe("#useDeckGl", () => {
   it("should merge client and server changes in viewState", () => {
@@ -255,7 +245,7 @@ describe("#useDeckGl", () => {
       mapStyle: "mapbox://styles/mapbox/light-v9",
     }
 
-    const mockJsonParse = jest.fn().mockReturnValue(newJson)
+    const mockJsonParse = vi.fn().mockReturnValue(newJson)
 
     beforeEach(() => {
       JSON5.parse = mockJsonParse
@@ -274,10 +264,6 @@ describe("#useDeckGl", () => {
         newProps: getUseDeckGlProps(undefined, { zoom: 19 }),
       },
       {
-        description: "should call JSON5.parse when FullScreen state changes",
-        newProps: { isFullScreen: true },
-      },
-      {
         description: "should call JSON5.parse when theme state changes",
         newProps: { isLightTheme: true },
       },
@@ -292,6 +278,24 @@ describe("#useDeckGl", () => {
       expect(JSON5.parse).toHaveBeenCalledTimes(1)
 
       rerender({ ...initialProps, ...newProps })
+
+      expect(JSON5.parse).toHaveBeenCalledTimes(2)
+    })
+
+    it("should call JSON5.parse when isFullScreen changes", async () => {
+      const user = userEvent.setup()
+      const MyComponent: FC<UseDeckGlProps> = props => {
+        useDeckGl(props)
+        const { expand } = useRequiredContext(ElementFullscreenContext)
+
+        return <button onClick={expand}>Expand</button>
+      }
+
+      render(<MyComponent {...getUseDeckGlProps()} />)
+
+      expect(JSON5.parse).toHaveBeenCalledTimes(1)
+
+      await user.click(screen.getByText("Expand"))
 
       expect(JSON5.parse).toHaveBeenCalledTimes(2)
     })
@@ -377,7 +381,7 @@ describe("#useDeckGl", () => {
       expect(result.current.hasActiveSelection).toBe(false)
     })
 
-    it("should be true when selection is not empty", async () => {
+    it("should be true when selection is not empty", () => {
       const initialProps = getUseDeckGlProps({
         selectionMode: [DeckGlJsonChartProto.SelectionMode.SINGLE_OBJECT],
       })
@@ -385,7 +389,7 @@ describe("#useDeckGl", () => {
         initialProps,
       })
 
-      await act(async () => {
+      act(() => {
         result.current.setSelection({
           fromUi: true,
           value: {
@@ -397,7 +401,7 @@ describe("#useDeckGl", () => {
         })
       })
 
-      rerender()
+      rerender(initialProps)
 
       expect(result.current.hasActiveSelection).toBe(true)
     })

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,16 @@
 
 import React from "react"
 
-import "@testing-library/jest-dom"
-import { fireEvent, screen } from "@testing-library/react"
+import { act, fireEvent, screen } from "@testing-library/react"
 
-import { render } from "@streamlit/lib/src/test_util"
-import { WidgetStateManager } from "@streamlit/lib/src/WidgetStateManager"
-import { Selectbox as SelectboxProto } from "@streamlit/lib/src/proto"
-import { mockTheme } from "@streamlit/lib/src/mocks/mockTheme"
+import { Selectbox as SelectboxProto } from "@streamlit/protobuf"
 
-import { Props, Selectbox } from "./Selectbox"
+import { render } from "~lib/test_util"
+import { WidgetStateManager } from "~lib/WidgetStateManager"
+import * as Utils from "~lib/theme/utils"
+import { mockConvertRemToPx } from "~lib/mocks/mocks"
+
+import Selectbox, { Props } from "./Selectbox"
 
 const getProps = (
   elementProps: Partial<SelectboxProto> = {},
@@ -37,23 +38,29 @@ const getProps = (
     options: ["a", "b", "c"],
     ...elementProps,
   }),
-  width: 0,
   disabled: false,
-  theme: mockTheme.emotion,
   widgetMgr: new WidgetStateManager({
-    sendRerunBackMsg: jest.fn(),
-    formsDataChanged: jest.fn(),
+    sendRerunBackMsg: vi.fn(),
+    formsDataChanged: vi.fn(),
   }),
   ...widgetProps,
 })
 
 const pickOption = (selectbox: HTMLElement, value: string): void => {
+  // TODO: Utilize user-event instead of fireEvent
+  // eslint-disable-next-line testing-library/prefer-user-event
   fireEvent.click(selectbox)
   const valueElement = screen.getByText(value)
+  // TODO: Utilize user-event instead of fireEvent
+  // eslint-disable-next-line testing-library/prefer-user-event
   fireEvent.click(valueElement)
 }
 
 describe("Selectbox widget", () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it("renders without crashing", () => {
     const props = getProps()
     render(<Selectbox {...props} />)
@@ -64,7 +71,7 @@ describe("Selectbox widget", () => {
 
   it("sets widget value on mount", () => {
     const props = getProps()
-    jest.spyOn(props.widgetMgr, "setIntValue")
+    vi.spyOn(props.widgetMgr, "setIntValue")
 
     render(<Selectbox {...props} />)
     expect(props.widgetMgr.setIntValue).toHaveBeenCalledWith(
@@ -77,7 +84,7 @@ describe("Selectbox widget", () => {
 
   it("can pass fragmentId to setIntValue", () => {
     const props = getProps(undefined, { fragmentId: "myFragmentId" })
-    jest.spyOn(props.widgetMgr, "setIntValue")
+    vi.spyOn(props.widgetMgr, "setIntValue")
 
     render(<Selectbox {...props} />)
     expect(props.widgetMgr.setIntValue).toHaveBeenCalledWith(
@@ -90,11 +97,13 @@ describe("Selectbox widget", () => {
 
   it("handles the onChange event", () => {
     const props = getProps()
-    jest.spyOn(props.widgetMgr, "setIntValue")
+    vi.spyOn(props.widgetMgr, "setIntValue")
+    vi.spyOn(Utils, "convertRemToPx").mockImplementation(mockConvertRemToPx)
 
     render(<Selectbox {...props} />)
 
     const selectbox = screen.getByRole("combobox")
+
     pickOption(selectbox, "b")
 
     expect(props.widgetMgr.setIntValue).toHaveBeenLastCalledWith(
@@ -112,7 +121,8 @@ describe("Selectbox widget", () => {
     const props = getProps({ formId: "form" })
     props.widgetMgr.setFormSubmitBehaviors("form", true)
 
-    jest.spyOn(props.widgetMgr, "setIntValue")
+    vi.spyOn(props.widgetMgr, "setIntValue")
+    vi.spyOn(Utils, "convertRemToPx").mockImplementation(mockConvertRemToPx)
 
     render(<Selectbox {...props} />)
 
@@ -127,7 +137,9 @@ describe("Selectbox widget", () => {
     )
 
     // "Submit" the form
-    props.widgetMgr.submitForm("form", undefined)
+    act(() => {
+      props.widgetMgr.submitForm("form", undefined)
+    })
 
     // Our widget should be reset, and the widgetMgr should be updated
     expect(screen.getByText("a")).toBeInTheDocument()

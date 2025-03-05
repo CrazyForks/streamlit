@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,22 @@
  * limitations under the License.
  */
 
-import { act, renderHook } from "@testing-library/react-hooks"
 import { CompactSelection } from "@glideapps/glide-data-grid"
+import { act, renderHook } from "@testing-library/react"
+import { Field, Utf8 } from "apache-arrow"
 
-import { Arrow as ArrowProto } from "@streamlit/lib/src/proto"
-import { TextColumn } from "@streamlit/lib/src/components/widgets/DataFrame/columns"
+import { Arrow as ArrowProto } from "@streamlit/protobuf"
+
+import { TextColumn } from "~lib/components/widgets/DataFrame/columns"
+import { DataFrameCellType } from "~lib/dataframes/arrowTypeUtils"
 
 import useSelectionHandler from "./useSelectionHandler"
 
-const syncSelectionStateMock = jest.fn()
+const syncSelectionStateMock = vi.fn()
 
 describe("useSelectionHandler hook", () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it("detects single row selection", () => {
@@ -556,9 +559,15 @@ describe("useSelectionHandler hook", () => {
           // Configure 1 index column
           TextColumn({
             arrowType: {
-              meta: null,
-              numpy_type: "object",
-              pandas_type: "unicode",
+              type: DataFrameCellType.DATA,
+              arrowField: new Field("index-0", new Utf8(), true),
+              pandasType: {
+                field_name: "index-0",
+                name: "index-0",
+                pandas_type: "unicode",
+                numpy_type: "unicode",
+                metadata: null,
+              },
             },
             id: "index-0",
             name: "",
@@ -566,6 +575,7 @@ describe("useSelectionHandler hook", () => {
             isEditable: true,
             isHidden: false,
             isIndex: true,
+            isPinned: false,
             isStretched: false,
             title: "",
           }),

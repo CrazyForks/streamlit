@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -228,7 +228,7 @@ If you think this is actually a Streamlit bug, please
         foo.clear(1)
         assert foo(1) == 2
 
-    def test_cached_st_method_clear_args(self):
+    def test_cached_class_method_clear_args(self):
         self.x = 0
 
         class ExampleClass:
@@ -251,6 +251,30 @@ If you think this is actually a Streamlit bug, please
         # calling foo.clear(1) should clear the cache for the argument 1,
         # therefore calling foo(1) should return the new value 2
         example_instance.foo.clear(1)
+        assert example_instance.foo(1) == 2
+
+        # Try the same with a keyword argument:
+        example_instance.foo.clear(y=1)
+        assert example_instance.foo(1) == 3
+
+    def test_cached_class_method_clear(self):
+        self.x = 0
+
+        class ExampleClass:
+            @st.cache_data
+            def foo(_self, y):
+                self.x += y
+                return self.x
+
+        example_instance = ExampleClass()
+        # Calling method foo produces the side effect of incrementing self.x
+        # and returning it as the result.
+
+        # calling foo(1) should return 1
+        assert example_instance.foo(1) == 1
+        example_instance.foo.clear()
+        # calling foo.clear() should clear all cached values:
+        # So the call to foo() should return the new value 2
         assert example_instance.foo(1) == 2
 
 
@@ -411,9 +435,10 @@ class CacheDataPersistTest(DeltaGeneratorTestCase):
 
         mock_os_remove.assert_not_called()
 
-        with patch(
-            "os.listdir", MagicMock(return_value=created_files_base_names)
-        ), patch("os.path.isdir", MagicMock(return_value=True)):
+        with (
+            patch("os.listdir", MagicMock(return_value=created_files_base_names)),
+            patch("os.path.isdir", MagicMock(return_value=True)),
+        ):
             # Clear foo's cache
             foo.clear()
 
@@ -608,9 +633,12 @@ class CacheDataValidateParamsTest(DeltaGeneratorTestCase):
         Runtime._instance = mock_runtime
 
     def test_error_logged_and_raised_on_improperly_configured_cache_data(self):
-        with self.assertRaises(InvalidCacheStorageContext) as e, self.assertLogs(
-            "streamlit.runtime.caching.cache_data_api", level=logging.ERROR
-        ) as logs:
+        with (
+            self.assertRaises(InvalidCacheStorageContext) as e,
+            self.assertLogs(
+                "streamlit.runtime.caching.cache_data_api", level=logging.ERROR
+            ) as logs,
+        ):
 
             @st.cache_data(persist="disk")
             def foo():
@@ -636,6 +664,11 @@ class CacheDataMessageReplayTest(DeltaGeneratorTestCase):
         self, _widget_name: str, widget_producer: ELEMENT_PRODUCER
     ):
         """Test that a warning is shown when a widget is created inside a cached function."""
+
+        if _widget_name == "experimental_audio_input":
+            # The experimental_audio_input element produces also a deprecation warning
+            # which makes this test irrelevant
+            return
 
         @st.cache_data(show_spinner=False)
         def cache_widget():

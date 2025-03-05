@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,14 @@
 import React from "react"
 
 import { DataEditorProps } from "@glideapps/glide-data-grid"
+import { getLogger } from "loglevel"
 
+import createDownloadLinkElement from "~lib/util/createDownloadLinkElement"
 import {
   BaseColumn,
   toSafeString,
-} from "@streamlit/lib/src/components/widgets/DataFrame/columns"
-import { isNullOrUndefined } from "@streamlit/lib/src/util/utils"
-import { logError, logWarning } from "@streamlit/lib/src/util/log"
+} from "~lib/components/widgets/DataFrame/columns"
+import { isNullOrUndefined } from "~lib/util/utils"
 
 // Delimiter between cells
 const CSV_DELIMITER = ","
@@ -39,6 +40,7 @@ const CSV_UTF8_BOM = "\ufeff"
 const CSV_SPECIAL_CHARS_REGEX = new RegExp(
   `[${[CSV_DELIMITER, CSV_QUOTE_CHAR, CSV_ROW_DELIMITER].join("")}]`
 )
+const LOG = getLogger("useDataExporter")
 
 export function toCsvRow(rowValues: any[]): string {
   return (
@@ -158,7 +160,7 @@ function useDataExporter(
       }
 
       try {
-        logWarning(
+        LOG.warn(
           "Failed to export data as CSV with FileSystem API, trying fallback method",
           error
         )
@@ -184,24 +186,21 @@ function useDataExporter(
           type: "text/csv;charset=utf-8;",
         })
         const url = URL.createObjectURL(blob)
-        const link = document.createElement("a")
-        // Open the download link in a new tab to ensure that this is working in embedded
-        // setups that limit the URL that an iframe can navigate to (e.g. via CSP)
-        if (enforceDownloadInNewTab) {
-          link.setAttribute("target", "_blank")
-        } else {
-          link.setAttribute("target", "_self")
-        }
+
+        const link = createDownloadLinkElement({
+          enforceDownloadInNewTab,
+          url,
+          filename: suggestedName,
+        })
 
         link.style.display = "none"
-        link.href = url
-        link.download = suggestedName
+
         document.body.appendChild(link) // Required for FF
         link.click()
         document.body.removeChild(link) // Clean up
         URL.revokeObjectURL(url) // Free up memory
       } catch (error) {
-        logError("Failed to export data as CSV", error)
+        LOG.error("Failed to export data as CSV", error)
       }
     }
   }, [columns, numRows, getCellContent, enforceDownloadInNewTab])

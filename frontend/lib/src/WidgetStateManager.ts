@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,15 @@
  * limitations under the License.
  */
 
-import produce, { Draft } from "immer"
+import { Draft, default as produce } from "immer"
 import { Long, util } from "protobufjs"
 import { Signal, SignalConnection } from "typed-signals"
 
 import {
-  isValidFormId,
-  notNullOrUndefined,
-} from "@streamlit/lib/src/util/utils"
-
-import {
+  ChatInputValue,
   DoubleArray,
   IArrowTable,
+  IChatInputValue,
   IFileUploaderState,
   SInt64Array,
   StringArray,
@@ -33,8 +30,9 @@ import {
   Button as SubmitButtonProto,
   WidgetState,
   WidgetStates,
-} from "./proto"
+} from "@streamlit/protobuf"
 
+import { isValidFormId, notNullOrUndefined } from "~lib/util/utils"
 export interface Source {
   fromUi: boolean
 }
@@ -283,6 +281,29 @@ export class WidgetStateManager {
     }
   }
 
+  /* Sometimes users change an input field and directly click on a button - which uses the trigger value -
+   * to trigger a rerun. We wrap the code that sends the trigger update in `setTimeout` so that trigger-based
+   * updates will be executed at the end of JavaScript's event loop. Callbacks for other elements, for example,
+   * the onBlur event of an input field, will be deterministically executed first in the event loop since they
+   * were encountered first in the sequential execution and will be executed FIFO from the task queue.
+   *
+   * Returns a promise that is resolved as soon as the timeout was triggered, mainly to make this easier to test.
+   * in our unit tests.
+   */
+  private setTriggerValueAtEndOfEventLoop(
+    widget: WidgetInfo,
+    source: Source,
+    fragmentId: string | undefined
+  ): Promise<void> {
+    return new Promise(resolve => {
+      setTimeout(() => {
+        this.onWidgetValueChanged(widget.formId, source, fragmentId)
+        this.deleteWidgetState(widget.id)
+        resolve()
+      }, 0)
+    })
+  }
+
   /**
    * Sets the string trigger value for the given widget ID to a string value,
    * sends a rerunScript message to the server, and then immediately unsets the
@@ -293,9 +314,21 @@ export class WidgetStateManager {
     value: string,
     source: Source,
     fragmentId: string | undefined
-  ): void {
+  ): Promise<void> {
     this.createWidgetState(widget, source).stringTriggerValue =
       new StringTriggerValue({ data: value })
+    return this.setTriggerValueAtEndOfEventLoop(widget, source, fragmentId)
+  }
+
+  public setChatInputValue(
+    widget: WidgetInfo,
+    value: IChatInputValue,
+    source: Source,
+    fragmentId: string | undefined
+  ): void {
+    this.createWidgetState(widget, source).chatInputValue = new ChatInputValue(
+      value
+    )
     this.onWidgetValueChanged(widget.formId, source, fragmentId)
     this.deleteWidgetState(widget.id)
   }
@@ -308,10 +341,9 @@ export class WidgetStateManager {
     widget: WidgetInfo,
     source: Source,
     fragmentId: string | undefined
-  ): void {
+  ): Promise<void> {
     this.createWidgetState(widget, source).triggerValue = true
-    this.onWidgetValueChanged(widget.formId, source, fragmentId)
-    this.deleteWidgetState(widget.id)
+    return this.setTriggerValueAtEndOfEventLoop(widget, source, fragmentId)
   }
 
   public getBoolValue(widget: WidgetInfo): boolean | undefined {
@@ -680,7 +712,7 @@ export class WidgetStateManager {
   }
 
   /** Store the IDs of all forms with in-progress uploads. */
-  public setFormsWithUploads(formsWithUploads: Set<string>): void {
+  public setFormsWithUploadsInProgress(formsWithUploads: Set<string>): void {
     this.updateFormsData(draft => {
       draft.formsWithUploads = formsWithUploads
     })

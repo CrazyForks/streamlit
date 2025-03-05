@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,17 @@
 
 import React from "react"
 
-import "@testing-library/jest-dom"
-import { fireEvent, screen } from "@testing-library/react"
-import userEvent from "@testing-library/user-event"
+import { screen, waitFor } from "@testing-library/react"
+import { userEvent } from "@testing-library/user-event"
 
-import { render } from "@streamlit/lib/src/test_util"
 import {
   LabelVisibilityMessage as LabelVisibilityMessageProto,
   TextArea as TextAreaProto,
-} from "@streamlit/lib/src/proto"
-import { WidgetStateManager } from "@streamlit/lib/src/WidgetStateManager"
-import { mockTheme } from "@streamlit/lib/src/mocks/mockTheme"
+} from "@streamlit/protobuf"
+
+import * as UseResizeObserver from "~lib/hooks/useResizeObserver"
+import { render } from "~lib/test_util"
+import { WidgetStateManager } from "~lib/WidgetStateManager"
 
 import TextArea, { Props } from "./TextArea"
 
@@ -41,12 +41,10 @@ const getProps = (
     placeholder: "Placeholder",
     ...elementProps,
   }),
-  width: 300,
   disabled: false,
-  theme: mockTheme.emotion,
   widgetMgr: new WidgetStateManager({
-    sendRerunBackMsg: jest.fn(),
-    formsDataChanged: jest.fn(),
+    sendRerunBackMsg: vi.fn(),
+    formsDataChanged: vi.fn(),
   }),
 
   ...widgetProps,
@@ -63,7 +61,7 @@ describe("TextArea widget", () => {
 
   it("sets widget value on mount", () => {
     const props = getProps()
-    jest.spyOn(props.widgetMgr, "setStringValue")
+    vi.spyOn(props.widgetMgr, "setStringValue")
     render(<TextArea {...props} />)
 
     expect(props.widgetMgr.setStringValue).toHaveBeenCalledWith(
@@ -76,7 +74,7 @@ describe("TextArea widget", () => {
 
   it("can pass fragmentId to setStringValue", () => {
     const props = getProps(undefined, { fragmentId: "myFragmentId" })
-    jest.spyOn(props.widgetMgr, "setStringValue")
+    vi.spyOn(props.widgetMgr, "setStringValue")
     render(<TextArea {...props} />)
 
     expect(props.widgetMgr.setStringValue).toHaveBeenCalledWith(
@@ -87,13 +85,12 @@ describe("TextArea widget", () => {
     )
   })
 
-  it("has correct className and style", () => {
+  it("has correct className", () => {
     const props = getProps()
     render(<TextArea {...props} />)
     const textArea = screen.getByTestId("stTextArea")
 
     expect(textArea).toHaveClass("stTextArea")
-    expect(textArea).toHaveStyle(`width: ${props.width}px`)
   })
 
   it("renders a label", () => {
@@ -150,14 +147,16 @@ describe("TextArea widget", () => {
     expect(textArea).toBeDisabled()
   })
 
-  it("sets widget value on blur", () => {
+  it("sets widget value on blur", async () => {
+    const user = userEvent.setup()
     const props = getProps()
-    jest.spyOn(props.widgetMgr, "setStringValue")
+    vi.spyOn(props.widgetMgr, "setStringValue")
     render(<TextArea {...props} />)
 
     const textArea = screen.getByRole("textbox")
-    fireEvent.change(textArea, { target: { value: "testing" } })
-    fireEvent.blur(textArea)
+    await user.type(textArea, "testing")
+    // Blur the textarea
+    await user.tab()
 
     expect(props.widgetMgr.setStringValue).toHaveBeenCalledWith(
       props.element,
@@ -169,15 +168,15 @@ describe("TextArea widget", () => {
     )
   })
 
-  it("sets widget value when ctrl+enter is pressed", () => {
+  it("sets widget value when ctrl+enter is pressed", async () => {
+    const user = userEvent.setup()
     const props = getProps()
-    jest.spyOn(props.widgetMgr, "setStringValue")
+    vi.spyOn(props.widgetMgr, "setStringValue")
     render(<TextArea {...props} />)
 
     const textArea = screen.getByRole("textbox")
-
-    fireEvent.change(textArea, { target: { value: "testing" } })
-    fireEvent.keyDown(textArea, { ctrlKey: true, key: "Enter" })
+    await user.type(textArea, "testing")
+    await user.keyboard("{Control>}{Enter}")
 
     expect(props.widgetMgr.setStringValue).toHaveBeenCalledWith(
       props.element,
@@ -189,7 +188,8 @@ describe("TextArea widget", () => {
     )
   })
 
-  it("limits the length if max_chars is passed", () => {
+  it("limits the length if max_chars is passed", async () => {
+    const user = userEvent.setup()
     const props = getProps({
       height: 500,
       maxChars: 10,
@@ -197,21 +197,21 @@ describe("TextArea widget", () => {
     render(<TextArea {...props} />)
 
     const textArea = screen.getByRole("textbox")
-
-    fireEvent.change(textArea, { target: { value: "0123456789" } })
+    await user.type(textArea, "0123456789")
     expect(textArea).toHaveValue("0123456789")
 
-    fireEvent.change(textArea, { target: { value: "0123456789a" } })
+    await user.type(textArea, "a")
     expect(textArea).toHaveValue("0123456789")
   })
 
-  it("does not update widget value on text changes when outside of a form", () => {
+  it("does not update widget value on text changes when outside of a form", async () => {
+    const user = userEvent.setup()
     const props = getProps()
-    jest.spyOn(props.widgetMgr, "setStringValue")
+    vi.spyOn(props.widgetMgr, "setStringValue")
     render(<TextArea {...props} />)
 
     const textArea = screen.getByRole("textbox")
-    fireEvent.change(textArea, { target: { value: "TEST" } })
+    await user.type(textArea, "TEST")
 
     // Check that the last call was in componentDidMount.
     expect(props.widgetMgr.setStringValue).toHaveBeenLastCalledWith(
@@ -224,37 +224,60 @@ describe("TextArea widget", () => {
     )
   })
 
-  it("hides Please enter to apply text when width is smaller than 180px", () => {
-    const props = getProps({}, { width: 100 })
+  it("hides Please enter to apply text when width is smaller than 180px", async () => {
+    const user = userEvent.setup()
+    const props = getProps({}, {})
+    vi.spyOn(UseResizeObserver, "useResizeObserver").mockReturnValue({
+      elementRef: React.createRef(),
+      forceRecalculate: vitest.fn(),
+      values: [100],
+    })
+
     render(<TextArea {...props} />)
+
+    const textArea = screen.getByRole("textbox")
+    await user.click(textArea)
+
     expect(screen.queryByTestId("InputInstructions")).not.toBeInTheDocument()
   })
 
-  it("shows Please enter to apply text when width is bigger than 180px", () => {
-    const props = getProps({}, { width: 190 })
+  it("shows Please enter to apply text when width is bigger than 180px", async () => {
+    vi.spyOn(UseResizeObserver, "useResizeObserver").mockReturnValue({
+      elementRef: React.createRef(),
+      forceRecalculate: vitest.fn(),
+      values: [190],
+    })
+
+    const user = userEvent.setup()
+    const props = getProps({}, {})
     render(<TextArea {...props} />)
+
+    const textArea = screen.getByRole("textbox")
+    await user.click(textArea)
+
     expect(screen.getByTestId("InputInstructions")).toBeInTheDocument()
   })
 
-  it("resets its value when form is cleared", () => {
+  it("resets its value when form is cleared", async () => {
+    const user = userEvent.setup()
     // Create a widget in a clearOnSubmit form
     const props = getProps({ formId: "form" })
     props.widgetMgr.setFormSubmitBehaviors("form", true)
 
-    jest.spyOn(props.widgetMgr, "setStringValue")
+    vi.spyOn(props.widgetMgr, "setStringValue")
 
     render(<TextArea {...props} />)
 
     // Change the widget value
     const textArea = screen.getByRole("textbox")
-    fireEvent.change(textArea, { target: { value: "TEST" } })
+    await user.type(textArea, "TEST")
     expect(textArea).toHaveValue("TEST")
 
     // "Submit" the form
     props.widgetMgr.submitForm("form", undefined)
 
     // Our widget should be reset, and the widgetMgr should be updated
-    expect(textArea).toHaveValue(props.element.default)
+    await waitFor(() => expect(textArea).toHaveValue(props.element.default))
     expect(props.widgetMgr.setStringValue).toHaveBeenLastCalledWith(
       props.element,
       props.element.default,
@@ -275,15 +298,13 @@ describe("TextArea widget", () => {
     await user.click(textArea)
     await user.keyboard("TEST")
 
-    expect(screen.getByTestId("InputInstructions")).toHaveTextContent(
-      "Press ⌘+Enter to apply"
-    )
+    expect(screen.getByText("Press ⌘+Enter to apply")).toBeVisible()
   })
 
   it("shows Input Instructions if in form that allows submit on enter", async () => {
     const user = userEvent.setup()
     const props = getProps({ formId: "form" })
-    jest.spyOn(props.widgetMgr, "allowFormEnterToSubmit").mockReturnValue(true)
+    vi.spyOn(props.widgetMgr, "allowFormEnterToSubmit").mockReturnValue(true)
 
     render(<TextArea {...props} />)
 
@@ -292,17 +313,38 @@ describe("TextArea widget", () => {
     await user.click(textArea)
     await user.keyboard("TEST")
 
-    expect(screen.getByTestId("InputInstructions")).toHaveTextContent(
-      "Press ⌘+Enter to submit form"
-    )
+    expect(screen.getByText("Press ⌘+Enter to submit form")).toBeVisible()
+  })
+
+  // For this scenario https://github.com/streamlit/streamlit/issues/7079
+  it("shows Input Instructions if focused again in form that allows submit on enter", async () => {
+    const user = userEvent.setup()
+    const props = getProps({ formId: "form" })
+    vi.spyOn(props.widgetMgr, "allowFormEnterToSubmit").mockReturnValue(true)
+
+    render(<TextArea {...props} />)
+
+    const textArea = screen.getByRole("textbox")
+    await user.click(textArea)
+    await user.keyboard("TEST")
+
+    // Remove focus
+    textArea.blur()
+    await waitFor(() => {
+      expect(screen.queryByTestId("InputInstructions")).not.toBeInTheDocument()
+    })
+
+    // Then focus again
+    textArea.focus()
+    await waitFor(() => {
+      expect(screen.getByText("Press ⌘+Enter to submit form")).toBeVisible()
+    })
   })
 
   it("hides Input Instructions if in form that doesn't allow submit on enter", async () => {
     const user = userEvent.setup()
     const props = getProps({ formId: "form" })
-    jest
-      .spyOn(props.widgetMgr, "allowFormEnterToSubmit")
-      .mockReturnValue(false)
+    vi.spyOn(props.widgetMgr, "allowFormEnterToSubmit").mockReturnValue(false)
 
     render(<TextArea {...props} />)
 
@@ -315,12 +357,12 @@ describe("TextArea widget", () => {
   })
 
   it("focuses input when clicking label", async () => {
+    const user = userEvent.setup()
     const props = getProps()
     render(<TextArea {...props} />)
     const textArea = screen.getByRole("textbox")
     expect(textArea).not.toHaveFocus()
     const label = screen.getByText(props.element.label)
-    const user = userEvent.setup()
     await user.click(label)
     expect(textArea).toHaveFocus()
   })
@@ -331,13 +373,14 @@ describe("TextArea widget", () => {
       writable: true,
     })
 
-    it("sets widget value when ⌘+enter is pressed", () => {
+    it("sets widget value when ⌘+enter is pressed", async () => {
+      const user = userEvent.setup()
       const props = getProps()
-      jest.spyOn(props.widgetMgr, "setStringValue")
+      vi.spyOn(props.widgetMgr, "setStringValue")
       render(<TextArea {...props} />)
       const textArea = screen.getByRole("textbox")
-      fireEvent.change(textArea, { target: { value: "testing" } })
-      fireEvent.keyDown(textArea, { metaKey: true, key: "Enter" })
+      await user.type(textArea, "testing")
+      await user.keyboard("{Meta>}{Enter}")
 
       expect(props.widgetMgr.setStringValue).toHaveBeenCalledWith(
         props.element,
@@ -350,7 +393,8 @@ describe("TextArea widget", () => {
     })
   })
 
-  it("ensures id doesn't change on rerender", () => {
+  it("ensures id doesn't change on rerender", async () => {
+    const user = userEvent.setup()
     const props = getProps()
     render(<TextArea {...props} />)
 
@@ -359,8 +403,8 @@ describe("TextArea widget", () => {
 
     // Make some change to cause a rerender
     const textArea = screen.getByRole("textbox")
-    fireEvent.change(textArea, { target: { value: "testing" } })
-    fireEvent.blur(textArea)
+    await user.type(textArea, "testing")
+    textArea.blur()
 
     const textAreaLabel2 = screen.getByTestId("stWidgetLabel")
     const forId2 = textAreaLabel2.getAttribute("for")

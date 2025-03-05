@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,11 @@ import React, { ReactElement, ReactNode } from "react"
 import { HelpCircle as HelpCircleIcon } from "react-feather"
 import { useTheme } from "@emotion/react"
 
-import Tooltip, {
-  Placement,
-} from "@streamlit/lib/src/components/shared/Tooltip"
+import Tooltip, { Placement } from "~lib/components/shared/Tooltip"
 import StreamlitMarkdown, {
   StreamlitMarkdownProps,
-} from "@streamlit/lib/src/components/shared/StreamlitMarkdown"
-import { EmotionTheme } from "@streamlit/lib/src/theme"
+} from "~lib/components/shared/StreamlitMarkdown"
+import { convertRemToPx, EmotionTheme } from "~lib/theme"
 
 import {
   StyledLabelHelpInline,
@@ -34,7 +32,6 @@ import {
 
 export interface TooltipIconProps {
   placement?: Placement
-  iconSize?: string
   isLatex?: boolean
   content: string
   children?: ReactNode
@@ -44,7 +41,6 @@ export interface TooltipIconProps {
 
 function TooltipIcon({
   placement = Placement.AUTO,
-  iconSize = "16",
   isLatex = false,
   content,
   children,
@@ -71,7 +67,13 @@ function TooltipIcon({
         onMouseEnterDelay={onMouseEnterDelay}
         inline
       >
-        {children || <HelpCircleIcon className="icon" size={iconSize} />}
+        {children || (
+          <HelpCircleIcon
+            className="icon"
+            /* Convert size to px because using rem works but logs a console error (at least on webkit) */
+            size={convertRemToPx(theme.iconSizes.base)}
+          />
+        )}
       </Tooltip>
     </StyledTooltipIconWrapper>
   )
@@ -79,7 +81,6 @@ function TooltipIcon({
 
 export const InlineTooltipIcon = ({
   placement = Placement.TOP_RIGHT,
-  iconSize = "16",
   isLatex = false,
   content,
   children,
@@ -89,7 +90,6 @@ export const InlineTooltipIcon = ({
     <StyledLabelHelpInline>
       <TooltipIcon
         placement={placement}
-        iconSize={iconSize}
         isLatex={isLatex}
         content={content}
         markdownProps={markdownProps}

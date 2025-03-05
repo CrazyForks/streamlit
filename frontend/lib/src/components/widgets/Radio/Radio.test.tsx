@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,13 @@
 
 import React from "react"
 
-import { act, fireEvent, screen } from "@testing-library/react"
+import { act, screen } from "@testing-library/react"
+import { userEvent } from "@testing-library/user-event"
 
-import { render } from "@streamlit/lib/src/test_util"
-import "@testing-library/jest-dom"
-import { WidgetStateManager } from "@streamlit/lib/src/WidgetStateManager"
-import { Radio as RadioProto } from "@streamlit/lib/src/proto"
+import { Radio as RadioProto } from "@streamlit/protobuf"
+
+import { render } from "~lib/test_util"
+import { WidgetStateManager } from "~lib/WidgetStateManager"
 
 import Radio, { Props } from "./Radio"
 
@@ -37,11 +38,10 @@ const getProps = (
     captions: [],
     ...elementProps,
   }),
-  width: 0,
   disabled: false,
   widgetMgr: new WidgetStateManager({
-    sendRerunBackMsg: jest.fn(),
-    formsDataChanged: jest.fn(),
+    sendRerunBackMsg: vi.fn(),
+    formsDataChanged: vi.fn(),
   }),
   ...otherProps,
 })
@@ -59,7 +59,7 @@ describe("Radio widget", () => {
 
   it("sets widget value on mount", () => {
     const props = getProps()
-    jest.spyOn(props.widgetMgr, "setIntValue")
+    vi.spyOn(props.widgetMgr, "setIntValue")
     render(<Radio {...props} />)
 
     expect(props.widgetMgr.setIntValue).toHaveBeenCalledWith(
@@ -72,7 +72,7 @@ describe("Radio widget", () => {
 
   it("can pass fragmentId to setIntValue", () => {
     const props = getProps(undefined, { fragmentId: "myFragmentId" })
-    jest.spyOn(props.widgetMgr, "setIntValue")
+    vi.spyOn(props.widgetMgr, "setIntValue")
     render(<Radio {...props} />)
 
     expect(props.widgetMgr.setIntValue).toHaveBeenCalledWith(
@@ -83,13 +83,12 @@ describe("Radio widget", () => {
     )
   })
 
-  it("has correct className and style", () => {
+  it("has correct className", () => {
     const props = getProps()
     render(<Radio {...props} />)
     const radioElement = screen.getByTestId("stRadio")
 
     expect(radioElement).toHaveClass("stRadio")
-    expect(radioElement).toHaveStyle(`width: ${props.width}px`)
   })
 
   it("renders a label", () => {
@@ -166,14 +165,15 @@ describe("Radio widget", () => {
     expect(noOptionLabel).toBeInTheDocument()
   })
 
-  it("sets the widget value when an option is selected", () => {
+  it("sets the widget value when an option is selected", async () => {
+    const user = userEvent.setup()
     const props = getProps()
-    jest.spyOn(props.widgetMgr, "setIntValue")
+    vi.spyOn(props.widgetMgr, "setIntValue")
     render(<Radio {...props} />)
     const radioOptions = screen.getAllByRole("radio")
     const secondOption = radioOptions[1]
 
-    fireEvent.click(secondOption)
+    await user.click(secondOption)
 
     expect(props.widgetMgr.setIntValue).toHaveBeenLastCalledWith(
       props.element,
@@ -185,18 +185,19 @@ describe("Radio widget", () => {
   })
 
   it("resets its value when form is cleared", async () => {
+    const user = userEvent.setup()
     // Create a widget in a clearOnSubmit form
     const props = getProps({ formId: "form" })
     props.widgetMgr.setFormSubmitBehaviors("form", true)
 
-    jest.spyOn(props.widgetMgr, "setIntValue")
+    vi.spyOn(props.widgetMgr, "setIntValue")
     render(<Radio {...props} />)
 
     const radioOptions = screen.getAllByRole("radio")
     const secondOption = radioOptions[1]
 
     // Change the widget value
-    fireEvent.click(secondOption)
+    await user.click(secondOption)
     expect(secondOption).toBeChecked()
 
     expect(props.widgetMgr.setIntValue).toHaveBeenLastCalledWith(
@@ -207,7 +208,7 @@ describe("Radio widget", () => {
     )
 
     // "Submit" the form
-    await act(() => {
+    act(() => {
       props.widgetMgr.submitForm("form", undefined)
     })
 

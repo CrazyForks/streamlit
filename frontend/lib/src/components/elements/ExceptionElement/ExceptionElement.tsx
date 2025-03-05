@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,25 @@
  * limitations under the License.
  */
 
-import React, { ReactElement } from "react"
+import React, { memo, ReactElement } from "react"
 
-import { notNullOrUndefined } from "@streamlit/lib/src/util/utils"
-import AlertContainer, {
-  Kind,
-} from "@streamlit/lib/src/components/shared/AlertContainer"
-import StreamlitMarkdown from "@streamlit/lib/src/components/shared/StreamlitMarkdown"
-import { Exception as ExceptionProto } from "@streamlit/lib/src/proto"
+import { Exception as ExceptionProto } from "@streamlit/protobuf"
+
+import { notNullOrUndefined } from "~lib/util/utils"
+import AlertContainer, { Kind } from "~lib/components/shared/AlertContainer"
+import StreamlitMarkdown from "~lib/components/shared/StreamlitMarkdown"
+import { StyledCode } from "~lib/components/elements/CodeBlock/styled-components"
+import { StyledStackTrace } from "~lib/components/shared/ErrorElement/styled-components"
 
 import {
+  StyledExceptionMessage,
   StyledMessageType,
-  StyledStackTrace,
+  StyledStackTraceContent,
   StyledStackTraceRow,
   StyledStackTraceTitle,
 } from "./styled-components"
 
 export interface ExceptionElementProps {
-  width: number
   element: ExceptionProto
 }
 
@@ -63,16 +64,17 @@ function ExceptionMessage({
   // messages, and so we wrap those messages inside our Markdown renderer.
 
   if (messageIsMarkdown) {
-    let markdown = `**${type}**`
-    if (message) {
-      markdown += `: ${message}`
+    let markdown = message ?? ""
+    if (type.length !== 0) {
+      markdown = `**${type}**: ${markdown}`
     }
     return <StreamlitMarkdown source={markdown} allowHTML={false} />
   }
   return (
     <>
       <StyledMessageType>{type}</StyledMessageType>
-      {isNonEmptyString(message) ? `: ${message}` : null}
+      {type.length !== 0 && ": "}
+      {isNonEmptyString(message) ? message : null}
     </>
   )
 }
@@ -83,13 +85,18 @@ function StackTrace({ stackTrace }: Readonly<StackTraceProps>): ReactElement {
     <>
       <StyledStackTraceTitle>Traceback:</StyledStackTraceTitle>
       <StyledStackTrace>
-        <code>
-          {stackTrace.map((row: string, index: number) => (
-            <StyledStackTraceRow key={index} data-testid="stExceptionTraceRow">
-              {row}
-            </StyledStackTraceRow>
-          ))}
-        </code>
+        <StyledStackTraceContent>
+          <StyledCode>
+            {stackTrace.map((row: string, index: number) => (
+              <StyledStackTraceRow
+                key={index}
+                data-testid="stExceptionTraceRow"
+              >
+                {row}
+              </StyledStackTraceRow>
+            ))}
+          </StyledCode>
+        </StyledStackTraceContent>
       </StyledStackTrace>
     </>
   )
@@ -98,23 +105,19 @@ function StackTrace({ stackTrace }: Readonly<StackTraceProps>): ReactElement {
 /**
  * Functional element representing formatted text.
  */
-export default function ExceptionElement({
+function ExceptionElement({
   element,
-  width,
 }: Readonly<ExceptionElementProps>): ReactElement {
   return (
     <div className="stException" data-testid="stException">
-      <AlertContainer
-        kind={element.isWarning ? Kind.WARNING : Kind.ERROR}
-        width={width}
-      >
-        <div data-testid="stExceptionMessage">
+      <AlertContainer kind={element.isWarning ? Kind.WARNING : Kind.ERROR}>
+        <StyledExceptionMessage data-testid="stExceptionMessage">
           <ExceptionMessage
             type={element.type}
             message={element.message}
             messageIsMarkdown={element.messageIsMarkdown}
           />
-        </div>
+        </StyledExceptionMessage>
         {element.stackTrace && element.stackTrace.length > 0 ? (
           <StackTrace stackTrace={element.stackTrace} />
         ) : null}
@@ -122,3 +125,5 @@ export default function ExceptionElement({
     </div>
   )
 }
+
+export default memo(ExceptionElement)

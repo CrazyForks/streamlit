@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import {
   IGuestToHostMessage,
   IToolbarItem,
 } from "@streamlit/lib"
-import { SegmentMetricsManager } from "@streamlit/app/src/SegmentMetricsManager"
+import { MetricsManager } from "@streamlit/app/src/MetricsManager"
 
 import {
   StyledActionButtonContainer,
@@ -63,7 +63,7 @@ export function ActionButton({
 export interface ToolbarActionsProps {
   sendMessageToHost: (message: IGuestToHostMessage) => void
   hostToolbarItems: IToolbarItem[]
-  metricsMgr: SegmentMetricsManager
+  metricsMgr: MetricsManager
 }
 
 function ToolbarActions({

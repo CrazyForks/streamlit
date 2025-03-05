@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+from pathlib import Path
 from random import random
 
 import streamlit as st
@@ -20,11 +20,8 @@ from streamlit import runtime
 
 # Construct test assets path relative to this script file to
 # allow its execution with different working directories.
-TEST_ASSETS_DIR = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "test_assets"
-)
-
-CAT_IMAGE = os.path.join(TEST_ASSETS_DIR, "cat.jpg")
+TEST_ASSETS_DIR = Path(__file__).parent / "test_assets"
+CAT_IMAGE = TEST_ASSETS_DIR / "cat.jpg"
 
 st.download_button(
     "Download button label",
@@ -47,11 +44,12 @@ st.download_button(
     mime="application/vnd.rar",
 )
 
-st.download_button(
-    "Download image file",
-    data=CAT_IMAGE,
-    file_name="cat.jpg",
-)
+with open(CAT_IMAGE, "rb") as f:
+    st.download_button(
+        "Download image file",
+        data=f,
+        file_name="cat.jpg",
+    )
 
 st.download_button(
     "Download button with use_container_width=True",
@@ -87,10 +85,32 @@ st.download_button(
     icon=":material/download:",
 )
 
+st.download_button(
+    "Tertiary download button",
+    data="Hello world!",
+    type="tertiary",
+)
+
+st.download_button(
+    "Disabled tertiary download button",
+    data="Hello world!",
+    type="tertiary",
+    disabled=True,
+)
+
 random_str = str(random())
 clicked = st.download_button(label="Download random text", data=random_str)
 
 st.write(f"value: {clicked}")
+
+download_button_ignore_rerun = st.download_button(
+    "Download Button ignore rerun",
+    key="download_button_ignore_rerun",
+    data="do not ignore the data, ignore rerun :)",
+    file_name="ignore_click.txt",
+    on_click="ignore",
+)
+st.write("Ignore rerun download button value:", download_button_ignore_rerun)
 
 # st.session_state can only be used in streamlit
 if runtime.exists():

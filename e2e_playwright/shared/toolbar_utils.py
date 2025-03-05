@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +17,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from playwright.sync_api import Page, expect
+
+from e2e_playwright.shared.react18_utils import (
+    take_stable_snapshot,
+)
 
 if TYPE_CHECKING:
     from e2e_playwright.conftest import ImageCompareFunction
@@ -51,17 +55,30 @@ def assert_fullscreen_toolbar_button_interactions(
     # Click on expand to fullscreen button:
     fullscreen_toolbar_button.click()
 
+    # Make sure that the button shows the close fullscreen button
+    expect(
+        widget_toolbar.get_by_role("button", name="Close fullscreen")
+    ).to_be_visible()
+
     # Check that it is visible
-    assert_snapshot(
-        fullscreen_wrapper,
-        name=f"{filename_prefix if filename_prefix != "" else widget_test_id}-fullscreen_expanded",
+    take_stable_snapshot(
+        app,
+        app,
+        assert_snapshot=assert_snapshot,
+        name=f"{filename_prefix if filename_prefix != '' else widget_test_id}-fullscreen_expanded",
         pixel_threshold=pixel_threshold,
     )
 
     # Click again on fullscreen button to close fullscreen mode:
     fullscreen_toolbar_button.click()
-    assert_snapshot(
+
+    # Make sure that the button shows the open fullscreen button
+    expect(widget_toolbar.get_by_role("button", name="Fullscreen")).to_be_visible()
+
+    take_stable_snapshot(
+        app,
         fullscreen_wrapper,
-        name=f"{filename_prefix if filename_prefix != "" else widget_test_id}-fullscreen_collapsed",
+        assert_snapshot=assert_snapshot,
+        name=f"{filename_prefix if filename_prefix != '' else widget_test_id}-fullscreen_collapsed",
         pixel_threshold=pixel_threshold,
     )

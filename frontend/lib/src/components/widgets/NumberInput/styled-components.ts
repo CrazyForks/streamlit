@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 import styled from "@emotion/styled"
 
-const CONTROLS_WIDTH = 32 // px
-
 export const StyledInputContainer = styled.div(({ theme }) => ({
   display: "flex",
   flexDirection: "row",
@@ -28,11 +26,7 @@ export const StyledInputContainer = styled.div(({ theme }) => ({
   // to the entire container and not only the input itself
   borderWidth: theme.sizes.borderWidth,
   borderStyle: "solid",
-  // Mimic the logic from createThemeOverrides.
-  borderColor:
-    theme.colors.widgetBorderColor ||
-    theme.colors.widgetBackgroundColor ||
-    theme.colors.bgColor,
+  borderColor: theme.colors.widgetBorderColor ?? theme.colors.secondaryBg,
   transitionDuration: "200ms",
   transitionProperty: "border",
   transitionTimingFunction: "cubic-bezier(0.2, 0.8, 0.4, 1)",
@@ -64,13 +58,11 @@ export const StyledInputControl = styled.button(({ theme }) => ({
   height: theme.sizes.full,
   display: "flex",
   alignItems: "center",
-  width: `${CONTROLS_WIDTH}px`,
+  width: theme.sizes.numberInputControlsWidth,
   justifyContent: "center",
   color: theme.colors.bodyText,
   transition: "color 300ms, backgroundColor 300ms",
-  // Mimic the logic from createThemeOverrides.
-  backgroundColor:
-    theme.colors.widgetBackgroundColor || theme.colors.secondaryBg,
+  backgroundColor: theme.colors.secondaryBg,
   "&:hover:enabled, &:focus:enabled": {
     color: theme.colors.white,
     backgroundColor: theme.colors.primary,
@@ -102,5 +94,9 @@ export const StyledInstructionsContainer =
     position: "absolute",
     marginRight: theme.spacing.twoXS,
     left: 0,
-    right: `${CONTROLS_WIDTH * 2 + (clearable ? 12 : 0)}px`,
+    // The instructions should be placed after the two controls
+    // and the clear button if it's present.
+    right: `calc(${theme.sizes.numberInputControlsWidth} * 2 + ${
+      clearable ? "1em" : "0em"
+    })`,
   }))

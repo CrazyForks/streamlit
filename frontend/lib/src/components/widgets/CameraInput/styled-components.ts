@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,17 +19,13 @@ import { MouseEvent, ReactNode } from "react"
 import styled, { CSSObject } from "@emotion/styled"
 import { transparentize } from "color2k"
 
-import { EmotionTheme } from "@streamlit/lib/src/theme"
+import { EmotionTheme } from "~lib/theme"
 
 export interface CameraInputButtonProps {
   onClick?: (event: MouseEvent<HTMLButtonElement>) => any
   disabled?: boolean
   children: ReactNode
   progress?: number | null
-}
-
-export interface StyledCameraInputProps {
-  width: number
 }
 
 enum Size {
@@ -63,14 +59,14 @@ function getSizeStyle(size: Size, theme: EmotionTheme): CSSObject {
 
 type RequiredCameraInputButtonProps = Required<CameraInputButtonProps>
 
-export const StyledCameraInput = styled.div<StyledCameraInputProps>(() => ({
+export const StyledCameraInput = styled.div({
   // This is used to position the "Switch facing mode" button
   // with respect to the webcam block.
   position: "relative",
   overflow: "hidden",
   width: "100%",
   objectFit: "contain",
-}))
+})
 
 export interface StyledBoxProps {
   width: number
@@ -108,31 +104,31 @@ export const StyledLink = styled.a(({ theme }) => ({
   textDecoration: "none",
 }))
 
-export const StyledSpan = styled.span(() => ({
+export const StyledSpan = styled.span({
   display: "flex",
   alignItems: "center",
-}))
+})
 
 export const StyledSwitchFacingModeButton = styled.div(({ theme }) => ({
   position: "absolute",
   top: theme.spacing.lg,
   right: theme.spacing.lg,
-  zIndex: 1,
+  zIndex: theme.zIndices.priority,
   color: theme.colors.fadedText40,
   mixBlendMode: "difference",
   opacity: 0.6,
 }))
 
-export const StyledWebcamWrapper = styled.div(() => ({
+export const StyledWebcamWrapper = styled.div({
   display: "flex",
-}))
+})
 
-export const StyledProgressBar = styled.div(() => ({
+export const StyledProgressBar = styled.div({
   height: "fit-content",
   width: "100%",
   position: "absolute",
   bottom: 0,
-}))
+})
 
 export const StyledCameraInputBaseButton =
   styled.button<RequiredCameraInputButtonProps>(({ theme }) => ({

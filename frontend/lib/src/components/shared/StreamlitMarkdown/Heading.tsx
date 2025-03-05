@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2024)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,15 @@
 
 import React, { Fragment, ReactElement } from "react"
 
-import { Heading as HeadingProto } from "@streamlit/lib/src/proto"
-import IsSidebarContext from "@streamlit/lib/src/components/core/IsSidebarContext"
+import { Heading as HeadingProto } from "@streamlit/protobuf"
 
-import { StyledDivider, StyledStreamlitMarkdown } from "./styled-components"
+import IsSidebarContext from "~lib/components/core/IsSidebarContext"
+import IsDialogContext from "~lib/components/core/IsDialogContext"
+
+import {
+  StyledHeaderDivider,
+  StyledStreamlitMarkdown,
+} from "./styled-components"
 import "katex/dist/katex.min.css"
 import {
   HeadingWithActionElements,
@@ -28,7 +33,6 @@ import {
 } from "./StreamlitMarkdown"
 
 export interface HeadingProtoProps {
-  width: number
   element: HeadingProto
 }
 
@@ -50,19 +54,19 @@ function makeMarkdownHeading(tag: string, markdown: string): string {
 }
 
 function Heading(props: HeadingProtoProps): ReactElement {
-  const { width, element } = props
+  const { element } = props
   const { tag, anchor, body, help, hideAnchor, divider } = element
   const isInSidebar = React.useContext(IsSidebarContext)
+  const isInDialog = React.useContext(IsDialogContext)
   // st.header can contain new lines which are just interpreted as new
   // markdown to be rendered as such.
   const [heading, ...rest] = body.split("\n")
 
   return (
-    <div style={{ width }} className="stHeading" data-testid="stHeading">
+    <div className="stHeading" data-testid="stHeading">
       <StyledStreamlitMarkdown
         isCaption={Boolean(false)}
-        isInSidebar={isInSidebar}
-        style={{ width }}
+        isInSidebarOrDialog={isInSidebar || isInDialog}
         data-testid="stMarkdownContainer"
       >
         <HeadingWithActionElements
@@ -92,7 +96,7 @@ function Heading(props: HeadingProtoProps): ReactElement {
         )}
       </StyledStreamlitMarkdown>
       {divider && (
-        <StyledDivider
+        <StyledHeaderDivider
           data-testid="stHeadingDivider"
           rainbow={divider.includes("linear")}
           color={divider}
