@@ -14,8 +14,8 @@
 
 from __future__ import annotations
 
+from streamlit import util
 from streamlit.proto.ForwardMsg_pb2 import ForwardMsg
-from streamlit.util import calc_md5
 
 
 def populate_hash_if_needed(msg: ForwardMsg) -> str:
@@ -42,7 +42,7 @@ def populate_hash_if_needed(msg: ForwardMsg) -> str:
         msg.ClearField("metadata")
 
         # MD5 is good enough for what we need, which is uniqueness.
-        msg.hash = calc_md5(msg.SerializeToString())
+        msg.hash = util.calc_md5(msg.SerializeToString())
 
         # Restore metadata.
         msg.metadata.CopyFrom(metadata)
