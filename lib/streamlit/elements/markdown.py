@@ -361,7 +361,8 @@ class MarkdownMixin:
 
         # Generate badge markdown
         badges = [
-            f":{c}-background[:{c}[{i} {l}]]" for l, i, c in zip(labels, icons, colors)
+            f":small[:{c}-background[:{c}[{i} {l}]]]"
+            for l, i, c in zip(labels, icons, colors)
         ]
         badge_proto.body = " &nbsp; ".join(badges)
         badge_proto.element_type = MarkdownProto.Type.NATIVE
