@@ -282,7 +282,7 @@ class MarkdownMixin:
         body: SupportsStr | sympy.Expr,
         *,  # keyword-only arguments:
         help: str | None = None,
-        width: Literal["stretch", "content"] | int = "content",
+        width: Literal["stretch", "content"] | int = "stretch",
         scale: int = 1,
     ) -> DeltaGenerator:
         # This docstring needs to be "raw" because of the backslashes in the
