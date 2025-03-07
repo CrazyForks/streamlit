@@ -50,7 +50,7 @@ class LayoutsMixin:
         # TODO: Move this Literal definition to somewhere shared
         gap: Literal["small", "medium", "large"] = "small",
         direction: Literal["vertical", "horizontal"] = "vertical",
-        wrap: bool = False,
+        wrap: bool = True,
         horizontal_alignment: Literal[
             "left",
             "center",
