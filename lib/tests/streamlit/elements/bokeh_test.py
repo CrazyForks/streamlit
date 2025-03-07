@@ -59,3 +59,21 @@ class BokehTest(DeltaGeneratorTestCase):
             plot = figure()
             with self.assertRaises(StreamlitAPIException):
                 st.bokeh_chart(plot)
+
+
+class BokehMissingTest(DeltaGeneratorTestCase):
+    """Test that appropriate error is raised when bokeh is not installed."""
+
+    def setUp(self):
+        super().setUp()
+        self.patcher = patch.dict("sys.modules", {"bokeh": None})
+        self.patcher.start()
+
+    def tearDown(self):
+        super().tearDown()
+        self.patcher.stop()
+
+    def test_bokeh_chart_missing_dependency(self):
+        """Test that ModuleNotFoundError is raised when bokeh is not installed."""
+        with self.assertRaises(ModuleNotFoundError):
+            st.bokeh_chart(None)
