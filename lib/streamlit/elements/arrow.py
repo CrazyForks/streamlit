@@ -225,7 +225,7 @@ class ArrowMixin:
     def dataframe(
         self,
         data: Data = None,
-        width: Literal["stretch", "content"] | int = "content",
+        width: Literal["stretch", "content"] | int = "stretch",
         height: int | None = None,
         *,
         use_container_width: bool = False,
@@ -242,7 +242,7 @@ class ArrowMixin:
     def dataframe(
         self,
         data: Data = None,
-        width: Literal["stretch", "content"] | int = "content",
+        width: Literal["stretch", "content"] | int = "stretch",
         height: int | None = None,
         *,
         use_container_width: bool = False,
@@ -259,7 +259,7 @@ class ArrowMixin:
     def dataframe(
         self,
         data: Data = None,
-        width: Literal["stretch", "content"] | int = "content",
+        width: Literal["stretch", "content"] | int = "stretch",
         height: int | None = None,
         *,
         use_container_width: bool = False,
@@ -320,7 +320,7 @@ class ArrowMixin:
             The width of the dataframe. If an integer, sets the width in pixels.
             If "stretch", the element will expand to fill its parent container.
             If "content", the element will be sized to fit its contents.
-            Defaults to "content".
+            Defaults to "stretch".
 
         height : int or None
             Desired height of the dataframe expressed in pixels. If ``height``
