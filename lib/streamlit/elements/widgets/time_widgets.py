@@ -325,7 +325,7 @@ class TimeWidgetsMixin:
         disabled: bool = False,
         label_visibility: LabelVisibility = "visible",
         step: int | timedelta = timedelta(minutes=DEFAULT_STEP_MINUTES),
-        width: Literal["stretch", "content"] | int = "stretch",
+        width: Literal["stretch"] | int = "stretch",
         scale: int = 1,
     ) -> time:
         pass
@@ -344,7 +344,7 @@ class TimeWidgetsMixin:
         disabled: bool = False,
         label_visibility: LabelVisibility = "visible",
         step: int | timedelta = timedelta(minutes=DEFAULT_STEP_MINUTES),
-        width: Literal["stretch", "content"] | int = "stretch",
+        width: Literal["stretch"] | int = "stretch",
         scale: int = 1,
     ) -> time | None:
         pass
@@ -363,7 +363,7 @@ class TimeWidgetsMixin:
         disabled: bool = False,
         label_visibility: LabelVisibility = "visible",
         step: int | timedelta = timedelta(minutes=DEFAULT_STEP_MINUTES),
-        width: Literal["stretch", "content"] | int = "stretch",
+        width: Literal["stretch"] | int = "stretch",
         scale: int = 1,
     ) -> time | None:
         r"""Display a time input widget.
@@ -442,10 +442,9 @@ class TimeWidgetsMixin:
             The stepping interval in seconds. Defaults to 900, i.e. 15 minutes.
             You can also pass a datetime.timedelta object.
 
-        width : "stretch", "content", or int
+        width : "stretch" or int
             The width of the time input widget. If "stretch", the widget will
-            stretch to fill the available space. If "content", the widget will
-            have a fixed width based on its content. If an integer, the widget
+            fill the available space in its container. If an integer, the widget
             will have a fixed width of that number of pixels.
 
         scale : int
@@ -513,7 +512,7 @@ class TimeWidgetsMixin:
         disabled: bool = False,
         label_visibility: LabelVisibility = "visible",
         step: int | timedelta = timedelta(minutes=DEFAULT_STEP_MINUTES),
-        width: Literal["stretch", "content"] | int = "stretch",
+        width: Literal["stretch"] | int = "stretch",
         scale: int = 1,
         ctx: ScriptRunContext | None = None,
     ) -> time | None:
@@ -611,7 +610,7 @@ class TimeWidgetsMixin:
         format: str = "YYYY/MM/DD",
         disabled: bool = False,
         label_visibility: LabelVisibility = "visible",
-        width: Literal["stretch", "content"] | int = "stretch",
+        width: Literal["stretch"] | int = "stretch",
         scale: int = 1,
     ) -> date: ...
 
@@ -631,7 +630,7 @@ class TimeWidgetsMixin:
         format: str = "YYYY/MM/DD",
         disabled: bool = False,
         label_visibility: LabelVisibility = "visible",
-        width: Literal["stretch", "content"] | int = "stretch",
+        width: Literal["stretch"] | int = "stretch",
         scale: int = 1,
     ) -> date | None: ...
 
@@ -653,7 +652,7 @@ class TimeWidgetsMixin:
         format: str = "YYYY/MM/DD",
         disabled: bool = False,
         label_visibility: LabelVisibility = "visible",
-        width: Literal["stretch", "content"] | int = "stretch",
+        width: Literal["stretch"] | int = "stretch",
         scale: int = 1,
     ) -> DateWidgetRangeReturn: ...
 
@@ -673,7 +672,7 @@ class TimeWidgetsMixin:
         format: str = "YYYY/MM/DD",
         disabled: bool = False,
         label_visibility: LabelVisibility = "visible",
-        width: Literal["stretch", "content"] | int = "stretch",
+        width: Literal["stretch"] | int = "stretch",
         scale: int = 1,
     ) -> DateWidgetReturn:
         r"""Display a date input widget.
@@ -781,10 +780,9 @@ class TimeWidgetsMixin:
             label, which can help keep the widget alligned with other widgets.
             If this is ``"collapsed"``, Streamlit displays no label or spacer.
 
-        width : "stretch", "content", or int
+        width : "stretch" or int
             The width of the date input widget. If "stretch", the widget will
-            stretch to fill the available space. If "content", the widget will
-            have a fixed width based on its content. If an integer, the widget
+            fill the available space in its container. If an integer, the widget
             will have a fixed width of that number of pixels.
 
         scale : int
@@ -878,7 +876,7 @@ class TimeWidgetsMixin:
         disabled: bool = False,
         label_visibility: LabelVisibility = "visible",
         ctx: ScriptRunContext | None = None,
-        width: Literal["stretch", "content"] | int = "stretch",
+        width: Literal["stretch"] | int = "stretch",
         scale: int = 1,
     ) -> DateWidgetReturn:
         key = to_key(key)
