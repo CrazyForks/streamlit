@@ -236,7 +236,7 @@ jobs:
 
   update-pr-comment:
     runs-on: ubuntu-latest
-    needs: [upload-whl, setup-preview]
+    needs: [initial-pr-comment, upload-whl, setup-preview]
     if: needs.upload-whl.outputs.enable-setup == 'true' && github.event_name == 'pull_request'
 
     permissions:
