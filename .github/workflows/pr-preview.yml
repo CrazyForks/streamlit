@@ -128,6 +128,7 @@ jobs:
 
     env:
       SIZE_CHANGE_THRESHOLD: 0.25 # Percentage threshold for significant size changes
+      WHEEL_ARTIFACT_NAME: whl_file # Name of the wheel artifact
 
     steps:
       - name: Compare wheel sizes
@@ -136,7 +137,9 @@ jobs:
         with:
           script: |
             const threshold = parseFloat(process.env.SIZE_CHANGE_THRESHOLD);
+            const wheelArtifactName = process.env.WHEEL_ARTIFACT_NAME;
             console.log(`Threshold for significant change: ${threshold}%`);
+            console.log(`Looking for wheel artifact with name: ${wheelArtifactName}`);
 
             try {
               // Get the current workflow run ID and artifacts
@@ -149,9 +152,9 @@ jobs:
                 run_id: currentRunId
               });
 
-              const currentWhlArtifact = currentArtifacts.artifacts.find(artifact => artifact.name === 'whl_file');
+              const currentWhlArtifact = currentArtifacts.artifacts.find(artifact => artifact.name === wheelArtifactName);
               if (!currentWhlArtifact) {
-                throw new Error('No whl_file artifact found in the current workflow run');
+                throw new Error(`No ${wheelArtifactName} artifact found in the current workflow run`);
               }
 
               const currentSize = currentWhlArtifact.size_in_bytes;
@@ -181,9 +184,9 @@ jobs:
                 run_id: latestRun.id
               });
 
-              const developWhlArtifact = developArtifacts.artifacts.find(artifact => artifact.name === 'whl_file');
+              const developWhlArtifact = developArtifacts.artifacts.find(artifact => artifact.name === wheelArtifactName);
               if (!developWhlArtifact) {
-                throw new Error('No whl_file artifact found in the develop workflow run');
+                throw new Error(`No ${wheelArtifactName} artifact found in the develop workflow run`);
               }
 
               const developSize = developWhlArtifact.size_in_bytes;
@@ -217,6 +220,7 @@ jobs:
             }
         env:
           SIZE_CHANGE_THRESHOLD: ${{ env.SIZE_CHANGE_THRESHOLD }}
+          WHEEL_ARTIFACT_NAME: ${{ env.WHEEL_ARTIFACT_NAME }}
 
       - name: Add PR comment for significant size change
         if: success() && fromJSON(steps.compare-sizes.outputs.result).is_significant
