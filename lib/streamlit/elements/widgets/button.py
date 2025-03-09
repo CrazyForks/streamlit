@@ -91,12 +91,12 @@ class ButtonMixin:
         key: Key | None = None,
         help: str | None = None,
         on_click: WidgetCallback | None = None,
-        width: Literal["stretch", "content"] | int = "content",
-        scale: int = 1,
         justify_right: bool = False,
         args: WidgetArgs | None = None,
         kwargs: WidgetKwargs | None = None,
         *,  # keyword-only arguments:
+        width: Literal["stretch", "content"] | int = "content",
+        scale: int = 1,
         type: Literal["primary", "secondary", "tertiary"] = "secondary",
         icon: str | None = None,
         disabled: bool = False,
@@ -958,8 +958,6 @@ class ButtonMixin:
         help: str | None,
         is_form_submitter: bool,
         on_click: WidgetCallback | None = None,
-        width: Literal["stretch", "content"] | int = "content",
-        scale: int = 1,
         justify_right: bool = False,
         args: WidgetArgs | None = None,
         kwargs: WidgetKwargs | None = None,
@@ -969,6 +967,8 @@ class ButtonMixin:
         disabled: bool = False,
         use_container_width: bool = False,
         ctx: ScriptRunContext | None = None,
+        width: Literal["stretch", "content"] | int = "content",
+        scale: int = 1,
     ) -> bool:
         key = to_key(key)
 
