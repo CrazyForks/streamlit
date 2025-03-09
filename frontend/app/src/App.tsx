@@ -1905,11 +1905,6 @@ export class App extends PureComponent<Props, State> {
       this.state.toolbarMode
     )
 
-    console.log(
-      "===== App.tsx - current page script hash",
-      currentPageScriptHash
-    )
-
     const outerDivClass = classNames(
       "stApp",
       getEmbeddingIdClassName(this.embeddingId),
