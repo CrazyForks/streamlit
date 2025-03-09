@@ -36,7 +36,7 @@ jobs:
                                     "| Name | Link |\n" +
                                     "| :----: | ---- |\n" +
                                     "| 📦 Wheel file | *Building...* |\n" +
-                                    "| 🕹️ Deploy preview | *Building...* |";
+                                    "| 🕹️ Preview app | *Building...* |";
 
             // Find an existing comment; if it exists, we will udpate it
             const { data: comments } = await github.rest.issues.listComments({
@@ -63,7 +63,7 @@ jobs:
               // Check if the comment already has links (not just "Building...")
               if (currentComment.body.includes("https://core-previews.s3-us-west-2.amazonaws.com/")) {
                 // If links exist, just update the status header
-                commentBody = currentComment.body.replace("### ✅ PR preview is ready!", "### 🏗️ PR preview is building...");
+                commentBody = currentComment.body.replace("### ✅ PR preview is ready!", "### 🚧 PR preview is building...");
               } else {
                 // If no links, use the building template
                 commentBody = buildingTemplate;
@@ -281,7 +281,7 @@ jobs:
                                  "| Name | Link |\n" +
                                  "| :----: | ---- |\n" +
                                  "| 📦 Wheel file | " + s3Url + " |\n" +
-                                 "| 🕹️ Deploy preview | [Deploy](" + deployUrl + ") |";
+                                 "| 🕹️ Preview app | [Deploy](" + deployUrl + ") |";
 
             await github.rest.issues.updateComment({
               owner: context.repo.owner,
