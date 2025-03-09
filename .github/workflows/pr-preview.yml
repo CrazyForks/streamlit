@@ -119,6 +119,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: upload-whl
     if: github.event_name == 'pull_request' && github.repository == 'streamlit/streamlit'
+    continue-on-error: true # Ensure the job doesn't fail the workflow
 
     permissions:
       contents: read
@@ -211,16 +212,14 @@ jobs:
               };
             } catch (error) {
               console.error(`Error comparing wheel sizes: ${error.message}`);
-              return {
-                success: false,
-                error: error.message
-              };
+              // Let the step fail naturally
+              throw error;
             }
         env:
           SIZE_CHANGE_THRESHOLD: ${{ env.SIZE_CHANGE_THRESHOLD }}
 
       - name: Add PR comment for significant size change
-        if: fromJSON(steps.compare-sizes.outputs.result).success && fromJSON(steps.compare-sizes.outputs.result).is_significant
+        if: success() && fromJSON(steps.compare-sizes.outputs.result).is_significant
         uses: actions/github-script@v7
         with:
           script: |
@@ -279,6 +278,7 @@ jobs:
               }
             } catch (error) {
               console.error(`Error adding PR comment: ${error.message}`);
+              throw error; // Let the step fail naturally
             }
         env:
           COMPARE_RESULT: ${{ steps.compare-sizes.outputs.result }}
