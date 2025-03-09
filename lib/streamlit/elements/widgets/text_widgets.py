@@ -85,14 +85,14 @@ class TextWidgetsMixin:
         help: str | None = None,
         autocomplete: str | None = None,
         on_change: WidgetCallback | None = None,
-        width: Literal["stretch"] | int = "stretch",
-        scale: int = 1,
         args: WidgetArgs | None = None,
         kwargs: WidgetKwargs | None = None,
         *,  # keyword-only arguments:
         placeholder: str | None = None,
         disabled: bool = False,
         label_visibility: LabelVisibility = "visible",
+        width: Literal["stretch"] | int = "stretch",
+        scale: int = 1,
     ) -> str:
         pass
 
@@ -107,14 +107,14 @@ class TextWidgetsMixin:
         help: str | None = None,
         autocomplete: str | None = None,
         on_change: WidgetCallback | None = None,
-        width: Literal["stretch"] | int = "stretch",
-        scale: int = 1,
         args: WidgetArgs | None = None,
         kwargs: WidgetKwargs | None = None,
         *,  # keyword-only arguments:
         placeholder: str | None = None,
         disabled: bool = False,
         label_visibility: LabelVisibility = "visible",
+        width: Literal["stretch"] | int = "stretch",
+        scale: int = 1,
     ) -> str | None:
         pass
 
@@ -129,14 +129,14 @@ class TextWidgetsMixin:
         help: str | None = None,
         autocomplete: str | None = None,
         on_change: WidgetCallback | None = None,
-        width: Literal["stretch"] | int = "stretch",
-        scale: int = 1,
         args: WidgetArgs | None = None,
         kwargs: WidgetKwargs | None = None,
         *,  # keyword-only arguments:
         placeholder: str | None = None,
         disabled: bool = False,
         label_visibility: LabelVisibility = "visible",
+        width: Literal["stretch"] | int = "stretch",
+        scale: int = 1,
     ) -> str | None:
         r"""Display a single-line text input widget.
 
@@ -255,10 +255,10 @@ class TextWidgetsMixin:
             help=help,
             autocomplete=autocomplete,
             on_change=on_change,
-            width=width,
-            scale=scale,
             args=args,
             kwargs=kwargs,
+            width=width,
+            scale=scale,
             placeholder=placeholder,
             disabled=disabled,
             label_visibility=label_visibility,
@@ -275,11 +275,11 @@ class TextWidgetsMixin:
         help: str | None = None,
         autocomplete: str | None = None,
         on_change: WidgetCallback | None = None,
-        width: Literal["stretch"] | int = "stretch",
-        scale: int = 1,
         args: WidgetArgs | None = None,
         kwargs: WidgetKwargs | None = None,
         *,  # keyword-only arguments:
+        width: Literal["stretch"] | int = "stretch",
+        scale: int = 1,
         placeholder: str | None = None,
         disabled: bool = False,
         label_visibility: LabelVisibility = "visible",
