@@ -115,6 +115,174 @@ jobs:
               context: 'Wheel ready!'
             })
 
+  check-size:
+    runs-on: ubuntu-latest
+    needs: upload-whl
+    if: github.event_name == 'pull_request' && github.repository == 'streamlit/streamlit'
+
+    permissions:
+      contents: read
+      pull-requests: write # Required to add comments to PR
+      actions: read # Required to access workflow runs
+
+    env:
+      SIZE_CHANGE_THRESHOLD: 0.25 # Percentage threshold for significant size changes
+
+    steps:
+      - name: Compare wheel sizes
+        id: compare-sizes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const threshold = parseFloat(process.env.SIZE_CHANGE_THRESHOLD);
+            console.log(`Threshold for significant change: ${threshold}%`);
+
+            try {
+              // Get the current workflow run ID and artifacts
+              const currentRunId = context.runId;
+              console.log(`Current run ID: ${currentRunId}`);
+
+              const { data: currentArtifacts } = await github.rest.actions.listWorkflowRunArtifacts({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: currentRunId
+              });
+
+              const currentWhlArtifact = currentArtifacts.artifacts.find(artifact => artifact.name === 'whl_file');
+              if (!currentWhlArtifact) {
+                throw new Error('No whl_file artifact found in the current workflow run');
+              }
+
+              const currentSize = currentWhlArtifact.size_in_bytes;
+              console.log(`Current wheel size: ${currentSize} bytes (${(currentSize / 1024).toFixed(2)} KB)`);
+
+              // Get the latest successful workflow run on develop branch
+              const { data: runs } = await github.rest.actions.listWorkflowRuns({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'pr-preview.yml',
+                branch: 'develop',
+                status: 'success',
+                per_page: 1
+              });
+
+              if (runs.workflow_runs.length === 0) {
+                throw new Error('No successful workflow runs found on develop branch');
+              }
+
+              const latestRun = runs.workflow_runs[0];
+              console.log(`Latest successful run on develop: ${latestRun.id}`);
+
+              // Get artifacts for the develop run
+              const { data: developArtifacts } = await github.rest.actions.listWorkflowRunArtifacts({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: latestRun.id
+              });
+
+              const developWhlArtifact = developArtifacts.artifacts.find(artifact => artifact.name === 'whl_file');
+              if (!developWhlArtifact) {
+                throw new Error('No whl_file artifact found in the develop workflow run');
+              }
+
+              const developSize = developWhlArtifact.size_in_bytes;
+              console.log(`Develop wheel size: ${developSize} bytes (${(developSize / 1024).toFixed(2)} KB)`);
+
+              // Calculate percentage difference
+              const diffPercent = ((currentSize - developSize) / developSize) * 100;
+              const absDiffPercent = Math.abs(diffPercent);
+
+              console.log(`Size difference: ${diffPercent.toFixed(2)}% (absolute: ${absDiffPercent.toFixed(2)}%)`);
+
+              // Check if difference is significant (>= threshold%)
+              const isSignificant = absDiffPercent >= threshold;
+
+              // Format sizes for human readability
+              const currentSizeKB = (currentSize / 1024).toFixed(2);
+              const developSizeKB = (developSize / 1024).toFixed(2);
+
+              return {
+                success: true,
+                is_significant: isSignificant,
+                diff_percent: diffPercent,
+                current_size_kb: currentSizeKB,
+                develop_size_kb: developSizeKB,
+                threshold: threshold
+              };
+            } catch (error) {
+              console.error(`Error comparing wheel sizes: ${error.message}`);
+              return {
+                success: false,
+                error: error.message
+              };
+            }
+        env:
+          SIZE_CHANGE_THRESHOLD: ${{ env.SIZE_CHANGE_THRESHOLD }}
+
+      - name: Add PR comment for significant size change
+        if: fromJSON(steps.compare-sizes.outputs.result).success && fromJSON(steps.compare-sizes.outputs.result).is_significant
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const result = JSON.parse(process.env.COMPARE_RESULT);
+
+            const diffPercent = result.diff_percent;
+            const currentSizeKB = result.current_size_kb;
+            const developSizeKB = result.develop_size_kb;
+            const threshold = result.threshold;
+
+            const changeType = diffPercent > 0 ? 'increased' : 'decreased';
+            const emoji = diffPercent > 0 ? '📈' : '📉';
+
+            const commentBody = `## ${emoji} Significant wheel size change detected
+
+            The wheel file size has **${changeType} by ${Math.abs(diffPercent).toFixed(2)}%** (threshold: ${threshold}%)
+
+            - Current PR: ${currentSizeKB} KB
+            - Latest develop: ${developSizeKB} KB
+
+            Please verify this change is expected.`;
+
+            // Unique identifier for our comment
+            const commentIdentifier = '<!-- STREAMLIT-WHEEL-SIZE-CHECK -->';
+            const fullCommentBody = `${commentIdentifier}\n${commentBody}`;
+
+            try {
+              // Get all comments on the PR
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              });
+
+              // Look for our previous wheel size comment
+              const sizeComment = comments.find(comment => comment.body.includes(commentIdentifier));
+
+              if (sizeComment) {
+                // Update existing comment
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: sizeComment.id,
+                  body: fullCommentBody
+                });
+                console.log('Updated existing wheel size comment');
+              } else {
+                // Create new comment
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: fullCommentBody
+                });
+                console.log('Created new wheel size comment');
+              }
+            } catch (error) {
+              console.error(`Error adding PR comment: ${error.message}`);
+            }
+        env:
+          COMPARE_RESULT: ${{ steps.compare-sizes.outputs.result }}
+
   setup-preview:
     runs-on: ubuntu-latest
 
