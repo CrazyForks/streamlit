@@ -63,6 +63,17 @@ function DownloadButton(props: Props): ReactElement {
     kind = BaseButtonKind.TERTIARY
   }
 
+  let fluidWidth = true
+  if (
+    element.width === "stretch" ||
+    element.useContainerWidth ||
+    !!element.help
+  ) {
+    fluidWidth = true
+  } else if (element.width === "content") {
+    fluidWidth = false
+  }
+
   const handleDownloadClick: () => void = () => {
     // Downloads are only done on links, so create a hidden one and click it
     // for the user.
@@ -83,7 +94,7 @@ function DownloadButton(props: Props): ReactElement {
           size={BaseButtonSize.SMALL}
           disabled={disabled}
           onClick={handleDownloadClick}
-          fluidWidth={element.useContainerWidth || !!element.help}
+          fluidWidth={fluidWidth}
         >
           <DynamicButtonLabel icon={element.icon} label={element.label} />
         </BaseButton>
