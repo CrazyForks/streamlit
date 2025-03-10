@@ -281,7 +281,7 @@ jobs:
                                  "| Name | Link |\n" +
                                  "| :----: | ---- |\n" +
                                  "| 📦 Wheel file | " + s3Url + " |\n" +
-                                 "| 🕹️ Preview app | [Deploy](" + deployUrl + ") |";
+                                 "| 🕹️ Preview app | [Deploy on Community Cloud](" + deployUrl + ") |";
 
             await github.rest.issues.updateComment({
               owner: context.repo.owner,
