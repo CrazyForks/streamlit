@@ -140,7 +140,7 @@ def _missing_key_error_message(key: str) -> str:
 
 class AttrDict(Mapping[str, Any]):
     """We use AttrDict to wrap up dictionary values from secrets
-    to provide dot access to nested secrets
+    to provide dot access to nested secrets.
     """
 
     def __init__(self, value):
@@ -207,7 +207,7 @@ class Secrets(Mapping[str, Any]):
     def load_if_toml_exists(self) -> bool:
         """Load secrets.toml files from disk if they exists. If none exist,
         no exception will be raised. (If a file exists but is malformed,
-        an exception *will* be raised.)
+        an exception *will* be raised.).
 
         Returns True if a secrets.toml file was successfully parsed, False otherwise.
 
@@ -234,7 +234,8 @@ class Secrets(Mapping[str, Any]):
         self, suppress_print_error_on_exception: bool
     ) -> None:
         """Set whether exceptions should be printed when accessing secrets.
-        For internal use, may change in future releases without notice."""
+        For internal use, may change in future releases without notice.
+        """
         self._suppress_print_error_on_exception = suppress_print_error_on_exception
 
     def _print_exception_if_not_suppressed(self, error_msg: str) -> None:

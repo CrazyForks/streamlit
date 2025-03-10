@@ -202,7 +202,7 @@ class FormMixin:
         disabled: bool = False,
         use_container_width: bool = False,
     ) -> bool:
-        """Display a form submit button.
+        r"""Display a form submit button.
 
         When this button is clicked, all widget values inside the form will be
         sent from the user's browser to your Streamlit server in a batch.

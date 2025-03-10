@@ -110,7 +110,7 @@ def configurator_options(func: F) -> F:
 
 
 def _download_remote(main_script_path: str, url_path: str) -> None:
-    """Fetch remote file at url_path to main_script_path"""
+    """Fetch remote file at url_path to main_script_path."""
     import requests
 
     with open(main_script_path, "wb") as fp:

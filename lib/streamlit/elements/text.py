@@ -33,7 +33,7 @@ class TextMixin:
         *,  # keyword-only arguments:
         help: str | None = None,
     ) -> DeltaGenerator:
-        """Write text without Markdown or HTML parsing.
+        r"""Write text without Markdown or HTML parsing.
 
         For monospace text, use |st.code|_.
 
