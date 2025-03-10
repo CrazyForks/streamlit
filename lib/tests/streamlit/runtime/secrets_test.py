@@ -26,6 +26,8 @@ from unittest.mock import MagicMock, mock_open, patch
 
 from parameterized import parameterized
 
+import streamlit as st
+from streamlit import config
 from streamlit.errors import StreamlitSecretNotFoundError
 from streamlit.runtime.secrets import (
     AttrDict,
@@ -33,6 +35,7 @@ from streamlit.runtime.secrets import (
     Secrets,
 )
 from tests import testutil
+from tests.delta_generator_test_case import DeltaGeneratorTestCase
 from tests.exception_capturing_thread import call_on_threads
 
 MOCK_TOML = """
@@ -457,3 +460,113 @@ class AttrDictTest(unittest.TestCase):
         attr_dict.to_dict()["x"]["y"] = "zed"
         assert attr_dict.x.y == "z"
         assert d["x"]["y"] == "z"
+
+
+class SecretsFallbackTest(DeltaGeneratorTestCase):
+    """Test that secrets falls back gracefully in various error scenarios."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self._orig_environ = dict(os.environ)
+        st.secrets._reset()
+
+        # Keep track of the original config
+        self._orig_secrets_files = config.get_option("secrets.files")
+
+        # Define mock paths we'll use
+        self.mock_path = "/mock/path/secrets.toml"
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        os.environ.clear()
+        os.environ.update(self._orig_environ)
+        st.secrets._reset()
+
+        # Restore the original config
+        config._set_option("secrets.files", self._orig_secrets_files, "test")
+
+    def test_nonexistent_file_fallback_no_error(self):
+        """Test fallback when no secrets file exists."""
+        # Point to a non-existent path
+        config._set_option(
+            "secrets.files", ["/definitely/not/a/real/path/secrets.toml"], "test"
+        )
+
+        # Test the fallback pattern
+        self._run_token_fallback_test()
+
+    @patch("os.path.exists", return_value=True)  # Make it think the file exists
+    @patch(
+        "builtins.open",
+        new_callable=mock_open,
+        read_data="""
+        # This TOML file has secrets but not the one we're looking for
+        db_username = "Jane"
+        db_password = "12345qwerty"
+
+        [subsection]
+        email = "eng@streamlit.io"
+        """,
+    )
+    def test_missing_key_fallback_no_error(self, mock_open, mock_exists):
+        """Test fallback when the secrets file exists but doesn't have the target key."""
+        # Point to our mock path
+        config._set_option("secrets.files", [self.mock_path], "test")
+
+        # Test the fallback pattern
+        self._run_token_fallback_test()
+
+    @patch("os.path.exists", return_value=True)  # Make it think the file exists
+    @patch(
+        "builtins.open",
+        new_callable=mock_open,
+        read_data="This is not valid TOML syntax",
+    )
+    def test_invalid_toml_fallback_no_error(self, mock_open, mock_exists):
+        """Test fallback when the secrets file has invalid TOML syntax."""
+        # Point to our mock path
+        config._set_option("secrets.files", [self.mock_path], "test")
+
+        # Test the fallback pattern
+        self._run_token_fallback_test()
+
+    def _run_token_fallback_test(self):
+        """Helper that runs the token fallback pattern and verifies UI behavior."""
+        # The key we'll try to access that doesn't exist
+        TARGET_KEY = "TOKEN"
+
+        # Run the pattern from the example
+        token = None
+
+        try:
+            if TARGET_KEY in st.secrets:
+                token = st.secrets[TARGET_KEY]
+        except StreamlitSecretNotFoundError:
+            pass
+
+        if not token:
+            token = st.text_input("Pass in your token!", type="password")
+
+        # Check that a text_input was created (this confirms the fallback worked)
+        text_input_proto = self.get_delta_from_queue().new_element.text_input
+        self.assertEqual(text_input_proto.label, "Pass in your token!")
+
+        # In the protocol buffer, password type is represented by enum value 1
+        self.assertEqual(text_input_proto.type, 1)  # 1 corresponds to "password" type
+
+        # Verify no error messages were sent to the UI
+        deltas = self.get_all_deltas_from_queue()
+
+        # Check for error messages in a way that's compatible with the Delta structure
+        for delta in deltas:
+            # Check if this is an error message delta
+            if delta.HasField("new_element"):
+                element = delta.new_element
+                # Check if the element has an exception field
+                self.assertFalse(element.HasField("exception"))
+                # Also check for markdown elements that might contain error messages
+                if element.HasField("markdown"):
+                    markdown_text = element.markdown.body
+                    self.assertFalse(
+                        "Error" in markdown_text or "error" in markdown_text
+                    )
