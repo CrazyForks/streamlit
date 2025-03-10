@@ -67,9 +67,14 @@ _MAX_UNEVALUATED_DF_ROWS = 10000
 
 _PANDAS_DATA_OBJECT_TYPE_RE: Final = re.compile(r"^pandas.*$")
 
-_DASK_DATAFRAME: Final = "dask.dataframe.core.DataFrame"
-_DASK_INDEX: Final = "dask.dataframe.core.Index"
-_DASK_SERIES: Final = "dask.dataframe.core.Series"
+_DASK_DATAFRAME: Final = "dask.dataframe.dask_expr._collection.DataFrame"
+_DASK_SERIES: Final = "dask.dataframe.dask_expr._collection.Series"
+_DASK_INDEX: Final = "dask.dataframe.dask_expr._collection.Index"
+# Dask removed the old legacy types, to support older and newer versions
+# we are still supporting the old an new types.
+_DASK_DATAFRAME_LEGACY: Final = "dask.dataframe.core.DataFrame"
+_DASK_SERIES_LEGACY: Final = "dask.dataframe.core.Series"
+_DASK_INDEX_LEGACY: Final = "dask.dataframe.core.Index"
 _DUCKDB_RELATION: Final = "duckdb.duckdb.DuckDBPyRelation"
 _MODIN_DF_TYPE_STR: Final = "modin.pandas.dataframe.DataFrame"
 _MODIN_SERIES_TYPE_STR: Final = "modin.pandas.series.Series"
@@ -377,8 +382,11 @@ def is_dask_object(obj: object) -> bool:
     """True if obj is a Dask DataFrame, Series, or Index."""
     return (
         is_type(obj, _DASK_DATAFRAME)
+        or is_type(obj, _DASK_DATAFRAME_LEGACY)
         or is_type(obj, _DASK_SERIES)
+        or is_type(obj, _DASK_SERIES_LEGACY)
         or is_type(obj, _DASK_INDEX)
+        or is_type(obj, _DASK_INDEX_LEGACY)
     )
 
 
@@ -498,7 +506,7 @@ def _fix_column_naming(data_df: DataFrame) -> DataFrame:
         # Pandas automatically names the first column with 0 if it is not named.
         # We rename it to "value" to make it more descriptive if there is only
         # one column in the dataframe.
-        data_df.rename(columns={0: "value"}, inplace=True)
+        data_df = data_df.rename(columns={0: "value"})
     return data_df
 
 
