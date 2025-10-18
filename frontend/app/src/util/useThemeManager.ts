@@ -36,7 +36,10 @@ export interface ThemeManager {
   activeTheme: ThemeConfig
   availableThemes: ThemeConfig[]
   setTheme: (theme: ThemeConfig) => void
-  addThemes: (themes: ThemeConfig[]) => void
+  addThemes: (
+    themes: ThemeConfig[],
+    options?: { keepPresetThemes?: boolean }
+  ) => void
   setFonts: (themeInfo: ICustomThemeConfig) => void
   setImportedTheme: (themeInfo: ICustomThemeConfig) => void
 }
@@ -57,8 +60,17 @@ export function useThemeManager(): [
     ...(isPresetTheme(defaultTheme) ? [] : [defaultTheme]),
   ])
 
-  const addThemes = (themeConfigs: ThemeConfig[]): void => {
-    setAvailableThemes([...createPresetThemes(), ...themeConfigs])
+  const addThemes = (
+    themeConfigs: ThemeConfig[],
+    options: { keepPresetThemes?: boolean } = {}
+  ): void => {
+    // keepPresetThemes is false when adding custom themes
+    // so that user cannot revert to a preset theme, true by default.
+    const { keepPresetThemes = true } = options
+    setAvailableThemes([
+      ...(keepPresetThemes ? createPresetThemes() : []),
+      ...themeConfigs,
+    ])
   }
 
   const updateTheme = useCallback(
