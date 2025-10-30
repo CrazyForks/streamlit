@@ -17,6 +17,7 @@
 import React, {
   ReactElement,
   useCallback,
+  useContext,
   useEffect,
   useRef,
   useState,
@@ -34,18 +35,20 @@ import {
   shouldShowNavigation,
   SidebarNav,
 } from "@streamlit/app/src/components/Navigation"
+import { useAppContext } from "@streamlit/app/src/components/StreamlitContextProvider"
 import { StreamlitEndpoints } from "@streamlit/connection"
 import {
   BaseButton,
   BaseButtonKind,
   DynamicIcon,
   IsSidebarContext,
+  NavigationContext,
   useEmotionTheme,
   useExecuteWhenChanged,
   useScrollbarGutterSize,
   useWindowDimensionsContext,
 } from "@streamlit/lib"
-import { IAppPage, Logo } from "@streamlit/protobuf"
+import { Logo } from "@streamlit/protobuf"
 import { localStorageAvailable } from "@streamlit/utils"
 
 import {
@@ -64,12 +67,6 @@ export interface SidebarProps {
   children?: ReactElement
   hasElements: boolean
   appLogo: Logo | null
-  appPages: IAppPage[]
-  navSections: string[]
-  onPageChange: (pageName: string) => void
-  currentPageScriptHash: string
-  hideSidebarNav: boolean
-  expandSidebarNav: boolean
   isCollapsed: boolean
   onToggleCollapse: (collapsed: boolean, shouldPersist?: boolean) => void
 }
@@ -84,20 +81,16 @@ function calculateMaxBreakpoint(value: string): number {
 const Sidebar: React.FC<SidebarProps> = ({
   appLogo,
   endpoints,
-  appPages,
   children,
   hasElements,
-  onPageChange,
-  currentPageScriptHash,
-  hideSidebarNav,
-  expandSidebarNav,
-  navSections,
   isCollapsed,
   onToggleCollapse,
 }): ReactElement => {
   const theme = useEmotionTheme()
   const mediumBreakpointPx = calculateMaxBreakpoint(theme.breakpoints.md)
   const { innerWidth } = useWindowDimensionsContext()
+  const { hideSidebarNav } = useAppContext()
+  const { appPages, navSections } = useContext(NavigationContext)
   const scrollbarGutterSize = useScrollbarGutterSize()
 
   const sidebarRef = useRef<HTMLDivElement>(null)
@@ -285,12 +278,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         {hasPageNavAbove && (
           <SidebarNav
             endpoints={endpoints}
-            appPages={appPages}
             collapseSidebar={toggleCollapse}
-            currentPageScriptHash={currentPageScriptHash}
             hasSidebarElements={hasElements}
-            expandSidebarNav={expandSidebarNav}
-            onPageChange={onPageChange}
           />
         )}
         <StyledSidebarUserContent
