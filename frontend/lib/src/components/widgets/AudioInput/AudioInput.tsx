@@ -135,8 +135,8 @@ const AudioInput: React.FC<Props> = ({
         setRecordingTime(duration)
         setProgressTime(duration)
       },
-      onApprove: (wav: Blob) => {
-        void transcodeAndUploadFileRef.current?.(wav)
+      onApprove: async (wav: Blob) => {
+        await transcodeAndUploadFileRef.current?.(wav)
       },
       onCancel: () => {
         setRecordingTime(STARTING_TIME_STRING)
@@ -462,7 +462,7 @@ const AudioInput: React.FC<Props> = ({
 
   const stopRecording = useCallback(async () => {
     try {
-      const blob = await stopController()
+      const { blob } = await stopController()
       await approveController(blob)
     } catch {
       setIsError(true)
