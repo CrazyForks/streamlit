@@ -87,6 +87,17 @@ import {
 import { App, LOG, Props } from "./App"
 import { showDevelopmentOptions } from "./showDevelopmentOptions"
 
+// Mock StreamlitConfig using global mock state (see vitest.setup.ts)
+vi.mock("@streamlit/utils", async () => {
+  const actual = await vi.importActual("@streamlit/utils")
+  return {
+    ...actual,
+    get StreamlitConfig() {
+      return globalThis.__mockStreamlitConfig
+    },
+  }
+})
+
 vi.mock("@streamlit/lib", async () => {
   const actualLib = await vi.importActual("@streamlit/lib")
   return {
@@ -568,9 +579,7 @@ describe("App", () => {
     beforeEach(() => {
       prevWindowLocation = window.location
 
-      window.__streamlit = {
-        ENABLE_RELOAD_BASED_ON_HARDCODED_STREAMLIT_VERSION: true,
-      }
+      globalThis.__mockStreamlitConfig.ENABLE_RELOAD_BASED_ON_HARDCODED_STREAMLIT_VERSION = true
     })
 
     afterEach(() => {
@@ -580,7 +589,7 @@ describe("App", () => {
         configurable: true,
       })
 
-      window.__streamlit = undefined
+      globalThis.__mockStreamlitConfig = {}
 
       // @ts-expect-error
       PACKAGE_METADATA = {
@@ -1736,15 +1745,9 @@ describe("App", () => {
   })
 
   describe("App.sendRerunBackMsg", () => {
-    let originalStreamlitWindowObj: typeof window.__streamlit
-
-    beforeEach(() => {
-      originalStreamlitWindowObj = window.__streamlit
-    })
-
     afterEach(() => {
       window.history.pushState({}, "", "/")
-      window.__streamlit = originalStreamlitWindowObj
+      globalThis.__mockStreamlitConfig = {}
     })
 
     it("sends the currentPageScriptHash if no pageScriptHash is given", () => {
@@ -1884,13 +1887,14 @@ describe("App", () => {
       ).toBe("baz")
     })
 
-    it("extracts pageName if window.__streamlit.MAIN_PAGE_BASE_URL is set (main page)", () => {
+    it("extracts pageName if StreamlitConfig.MAIN_PAGE_BASE_URL is set (main page)", () => {
       renderApp(getProps())
       const widgetStateManager =
         getStoredValue<WidgetStateManager>(WidgetStateManager)
       const connectionManager = getMockConnectionManager()
 
-      window.__streamlit = { MAIN_PAGE_BASE_URL: "http://localhost/foo/bar" }
+      globalThis.__mockStreamlitConfig.MAIN_PAGE_BASE_URL =
+        "http://localhost/foo/bar"
       window.history.pushState({}, "", "/foo/bar/")
       widgetStateManager.sendUpdateWidgetsMessage(undefined)
 
@@ -1900,13 +1904,14 @@ describe("App", () => {
       ).toBe("")
     })
 
-    it("extracts pageName if window.__streamlit.MAIN_PAGE_BASE_URL is set (non-main page)", () => {
+    it("extracts pageName if StreamlitConfig.MAIN_PAGE_BASE_URL is set (non-main page)", () => {
       renderApp(getProps())
       const widgetStateManager =
         getStoredValue<WidgetStateManager>(WidgetStateManager)
       const connectionManager = getMockConnectionManager()
 
-      window.__streamlit = { MAIN_PAGE_BASE_URL: "http://localhost/foo/bar" }
+      globalThis.__mockStreamlitConfig.MAIN_PAGE_BASE_URL =
+        "http://localhost/foo/bar"
       window.history.pushState({}, "", "/foo/bar/baz")
       widgetStateManager.sendUpdateWidgetsMessage(undefined)
 
@@ -4305,19 +4310,17 @@ describe("App", () => {
   describe("page change URL handling", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TODO: Replace 'any' with a more specific type.
     let pushStateSpy: any
-    let originalStreamlitWindowObj: typeof window.__streamlit
 
     beforeEach(() => {
       window.history.pushState({}, "", "/")
       pushStateSpy = vi.spyOn(window.history, "pushState")
-      originalStreamlitWindowObj = window.__streamlit
     })
 
     afterEach(() => {
       pushStateSpy.mockRestore()
       window.history.pushState({}, "", "/")
       window.localStorage.clear()
-      window.__streamlit = originalStreamlitWindowObj
+      globalThis.__mockStreamlitConfig = {}
     })
 
     it("can switch to the main page from a different page", () => {
@@ -4504,10 +4507,11 @@ describe("App", () => {
       )
     })
 
-    it("works with window.__streamlit.MAIN_PAGE_BASE_URL", () => {
+    it("works with StreamlitConfig.MAIN_PAGE_BASE_URL", () => {
       renderApp(getProps())
 
-      window.__streamlit = { MAIN_PAGE_BASE_URL: "http://example.com/foo" }
+      globalThis.__mockStreamlitConfig.MAIN_PAGE_BASE_URL =
+        "http://example.com/foo"
 
       sendForwardMessage("newSession", {
         ...NEW_SESSION_JSON,
