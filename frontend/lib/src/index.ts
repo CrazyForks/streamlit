@@ -136,6 +136,7 @@ export {
   lightTheme,
   removeCachedTheme,
   setCachedTheme,
+  sortThemeInputKeys,
   toExportedTheme,
   toThemeInput,
 } from "./theme"
