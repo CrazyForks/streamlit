@@ -17,20 +17,12 @@
 syntax = "proto3";
 
 option java_package = "com.snowflake.apps.streamlit";
-option java_outer_classname = "LinkButtonProto";
+option java_outer_classname = "ButtonLikeIconPositionProto";
 
-import "streamlit/proto/ButtonLikeIconPosition.proto";
+package streamlit;
 
-message LinkButton {
-  // The ID is only needed if a shortcut is provided.
-  string id = 1;
-  string label = 2;
-  string help = 4;
-  string url = 6;
-  bool disabled = 7;
-  bool use_container_width = 8;
-  string type = 9;
-  string icon = 10;
-  string shortcut = 11;
-  streamlit.ButtonLikeIconPosition icon_position = 12;
+// Shared enum for icon positions used by button-like elements.
+enum ButtonLikeIconPosition {
+  LEFT = 0;
+  RIGHT = 1;
 }

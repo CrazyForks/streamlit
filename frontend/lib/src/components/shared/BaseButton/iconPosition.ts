@@ -1,4 +1,4 @@
-/**!
+/**
  * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,23 +14,25 @@
  * limitations under the License.
  */
 
-syntax = "proto3";
+/**
+ * Shared mapping from protobuf IconPosition enum to UI icon position values.
+ */
 
-option java_package = "com.snowflake.apps.streamlit";
-option java_outer_classname = "LinkButtonProto";
+import { streamlit } from "@streamlit/protobuf"
+export type UiIconPosition = "left" | "right"
 
-import "streamlit/proto/ButtonLikeIconPosition.proto";
+const ICON_POSITION_MAP: Record<
+  streamlit.ButtonLikeIconPosition,
+  UiIconPosition
+> = {
+  [streamlit.ButtonLikeIconPosition.LEFT]: "left",
+  [streamlit.ButtonLikeIconPosition.RIGHT]: "right",
+} as const
 
-message LinkButton {
-  // The ID is only needed if a shortcut is provided.
-  string id = 1;
-  string label = 2;
-  string help = 4;
-  string url = 6;
-  bool disabled = 7;
-  bool use_container_width = 8;
-  string type = 9;
-  string icon = 10;
-  string shortcut = 11;
-  streamlit.ButtonLikeIconPosition icon_position = 12;
+export function mapProtoIconPosition(
+  iconPosition: streamlit.ButtonLikeIconPosition | null | undefined
+): UiIconPosition {
+  return ICON_POSITION_MAP[
+    iconPosition ?? streamlit.ButtonLikeIconPosition.LEFT
+  ]
 }
