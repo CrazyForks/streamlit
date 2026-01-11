@@ -661,28 +661,30 @@ def test_file_upload_error_message_disallowed_files(
         themed_app, get_element_by_key(themed_app, "single_file"), [file1]
     )
 
-    uploaded_files = (
-        get_element_by_key(themed_app, "single_file")
-        .get_by_test_id("stChatUploadedFiles")
-        .first
-    )
+    chat_input = get_element_by_key(themed_app, "single_file")
+    uploaded_files = chat_input.get_by_test_id("stChatUploadedFiles").first
     expect(uploaded_files.get_by_text(file_name1)).to_be_visible()
-
-    # Dismiss any tooltips before taking snapshot (WebKit can leave upload tooltip visible)
-    reset_hovering(themed_app)
-
-    assert_snapshot(uploaded_files, name="st_chat_input-file_uploaded_error")
-
-    # Verify error message is displayed inline
-    error_message = uploaded_files.get_by_test_id("stChatInputFileError").first
-    expect(error_message).to_be_visible()
-    expect(error_message).to_have_text("application/json files are not allowed.")
 
     # Verify file chip has retry attributes (all errors are retryable)
     file_chip = uploaded_files.get_by_test_id("stChatInputFile").first
     expect(file_chip).to_have_attribute("role", "button")
     expect(file_chip).to_have_attribute("tabindex", "0")
     expect(file_chip).to_have_attribute("title", "Click to retry upload")
+
+    # Snapshot the error file chip (without tooltip)
+    assert_snapshot(file_chip, name="st_chat_input-file_uploaded_error")
+
+    # Verify tooltip is NOT visible before hovering
+    expect(themed_app.get_by_test_id("stTooltipErrorContent")).not_to_be_visible()
+
+    # Hover to show error tooltip
+    file_chip.hover()
+    error_tooltip = themed_app.get_by_test_id("stTooltipErrorContent").first
+    expect(error_tooltip).to_be_visible()
+    expect(error_tooltip).to_have_text("application/json files are not allowed.")
+
+    # Snapshot the tooltip content directly (tooltips are portals rendered to <body>)
+    assert_snapshot(error_tooltip, name="st_chat_input-file_uploaded_error_tooltip")
 
 
 @use_chat_input("single_file")
@@ -716,10 +718,12 @@ def test_file_upload_error_message_file_too_large(app: Page):
     # Reset hovering to dismiss any upload tooltips
     reset_hovering(app)
 
-    # Verify error message is displayed inline
-    error_message = uploaded_files.get_by_test_id("stChatInputFileError").first
-    expect(error_message).to_be_visible()
-    expect(error_message).to_have_text("File must be 1.0MB or smaller.")
+    # Verify error message is displayed as a tooltip when hovering
+    file_chip = uploaded_files.get_by_test_id("stChatInputFile").first
+    file_chip.hover()
+    error_tooltip = app.get_by_test_id("stTooltipErrorContent").first
+    expect(error_tooltip).to_be_visible()
+    expect(error_tooltip).to_have_text("File must be 1.0MB or smaller.")
 
 
 @use_chat_input("single_file")
@@ -1741,15 +1745,18 @@ def test_file_upload_retry_click_success(app: Page):
         expect(file_chip).to_have_attribute("role", "button")
         expect(file_chip).to_have_attribute("title", "Click to retry upload")
 
-        error_message = uploaded_files.get_by_test_id("stChatInputFileError").first
-        expect(error_message).to_be_visible()
+        # Verify error message is displayed as a tooltip when hovering
+        file_chip.hover()
+        error_tooltip = app.get_by_test_id("stTooltipErrorContent").first
+        expect(error_tooltip).to_be_visible()
 
         # Click to retry - this should succeed since we now allow requests through
         file_chip.click()
 
-        # Wait for successful upload - error should disappear, file size should appear
-        # After successful upload, there should be no error message
-        expect(error_message).not_to_be_visible(timeout=5000)
+        # Wait for successful upload - tooltip wrapper should disappear
+        # After successful upload, file chip is no longer wrapped in error tooltip
+        tooltip_wrapper = app.get_by_test_id("stTooltipErrorHoverTarget").first
+        expect(tooltip_wrapper).not_to_be_visible(timeout=5000)
 
         # Verify file is now in uploaded state (shows size instead of error)
         file_size = uploaded_files.get_by_test_id("stChatInputFileName").first
