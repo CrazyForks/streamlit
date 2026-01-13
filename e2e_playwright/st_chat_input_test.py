@@ -1843,3 +1843,152 @@ def test_upload_button_works_after_upload_and_delete(app: Page):
 
     # Verify the first deleted file doesn't reappear (negative assertion)
     expect(uploaded_files.get_by_text(first_file_name)).not_to_be_visible()
+
+
+@use_chat_input("inline")
+def test_dynamic_stacked_layout_transitions(
+    app: Page, assert_snapshot: ImageCompareFunction
+):
+    """Test that chat input dynamically transitions between inline and stacked layouts.
+
+    The layout should:
+    1. Start in inline mode (buttons and textarea on same row)
+    2. Switch to stacked mode when text fills available width
+    3. Stay in stacked mode when text is partially deleted (still has content)
+    4. Return to inline mode only when all text is cleared
+    """
+    app.set_viewport_size({"width": 750, "height": 400})
+
+    chat_input = get_element_by_key(app, "inline")
+    textarea = chat_input.locator("textarea").first
+
+    # 1. Type short text - should still be in inline mode
+    short_text = "Hello, this is test"  # 19 chars
+    textarea.type(short_text)
+    assert_snapshot(chat_input, name="st_chat_input-layout_inline_short_text")
+
+    # 2. Type more text to trigger stacked mode
+    long_text = (
+        " and now I'm adding a lot more text to fill up the available width "
+        "so that the layout switches to stacked mode with buttons below"
+    )
+    textarea.type(long_text)
+    assert_snapshot(chat_input, name="st_chat_input-layout_stacked_long_text")
+
+    # 3. Replace with shorter text (but not empty) - should STAY in stacked mode
+    # Use fill() to efficiently replace text without character-by-character deletion
+    partial_text = "Hello, this is test "  # 20 chars - still has content
+    textarea.fill(partial_text)
+    assert_snapshot(chat_input, name="st_chat_input-layout_stacked_after_delete")
+
+    # 4. Clear all text - should return to inline mode
+    # Use select all + backspace for efficient clearing
+    textarea.press(
+        "Meta+a"
+        if app.evaluate("navigator.platform").startswith("Mac")
+        else "Control+a"
+    )
+    textarea.press("Backspace")
+    assert_snapshot(chat_input, name="st_chat_input-layout_inline_after_clear")
+
+    # Negative assertion: verify that typing short text does NOT trigger stacked mode
+    textarea.type("Brief")
+    expect(textarea).to_have_value("Brief")
+    # Take a snapshot to verify we're still in inline mode with brief text
+    assert_snapshot(chat_input, name="st_chat_input-layout_inline_brief_text")
+
+
+@use_chat_input("audio_only")
+@pytest.mark.skip_browser("webkit")  # Webkit CI audio permission issue
+def test_layout_alignment_after_audio_submission(
+    app: Page, assert_snapshot: ImageCompareFunction
+):
+    """Test that chat input alignment is correct after audio recording and submission.
+
+    Regression test: After recording and submitting audio, the textarea placeholder
+    should be vertically aligned with the buttons (not shifted higher).
+    """
+    app.set_viewport_size({"width": 750, "height": 400})
+
+    chat_input = get_element_by_key(app, "audio_only")
+
+    # 1. Capture initial alignment state
+    assert_snapshot(chat_input, name="st_chat_input-audio_initial_alignment")
+
+    # 2. Record and submit audio
+    record_audio_in_chat_input(app, chat_input)
+
+    # 3. Wait for submission and app rerun
+    wait_for_app_run(app)
+    expect_chat_input_value_contains_audio(app, "audio_only")
+
+    # 4. Capture alignment after audio submission - should match initial alignment
+    chat_input = get_element_by_key(app, "audio_only")
+    assert_snapshot(chat_input, name="st_chat_input-audio_alignment_after_submit")
+
+
+@use_chat_input("audio_only")
+@pytest.mark.skip_browser("webkit")  # Webkit CI audio permission issue
+def test_stacked_layout_triggers_after_audio_submission(
+    app: Page, assert_snapshot: ImageCompareFunction
+):
+    """Test that stacked layout mode works correctly after audio submission.
+
+    Regression test: After recording and submitting audio, typing long text
+    should still trigger the stacked layout mode (textarea above buttons).
+    """
+    app.set_viewport_size({"width": 750, "height": 400})
+
+    chat_input = get_element_by_key(app, "audio_only")
+
+    # 1. Record and submit audio
+    record_audio_in_chat_input(app, chat_input)
+    wait_for_app_run(app)
+    expect_chat_input_value_contains_audio(app, "audio_only")
+
+    # 2. Get fresh reference and type long text
+    chat_input = get_element_by_key(app, "audio_only")
+    textarea = chat_input.locator("textarea").first
+
+    long_text = (
+        "This is a very long message that should trigger the stacked layout mode "
+        "where the textarea appears above the buttons instead of inline"
+    )
+    textarea.type(long_text)
+
+    # 3. Verify stacked layout is triggered
+    assert_snapshot(chat_input, name="st_chat_input-stacked_after_audio_submit")
+
+
+@use_chat_input("audio_only")
+@pytest.mark.skip_browser("webkit")  # Webkit CI audio permission issue
+def test_layout_after_audio_cancel(app: Page, assert_snapshot: ImageCompareFunction):
+    """Test that layout returns to correct state after canceling audio recording.
+
+    After canceling a recording, the textarea should:
+    1. Be visible and properly aligned with buttons
+    2. Support stacked layout mode when typing long text
+    """
+    app.set_viewport_size({"width": 750, "height": 400})
+
+    chat_input = get_element_by_key(app, "audio_only")
+
+    # 1. Start recording
+    start_audio_recording(chat_input)
+
+    # 2. Cancel recording
+    cancel_button = chat_input.get_by_test_id("stChatInputCancelButton")
+    cancel_button.click()
+
+    # 3. Verify textarea is back and aligned correctly
+    textarea = chat_input.locator("textarea").first
+    expect(textarea).to_be_visible()
+    assert_snapshot(chat_input, name="st_chat_input-alignment_after_audio_cancel")
+
+    # 4. Verify stacking still works after cancel
+    long_text = (
+        "A very long message that should trigger stacked mode even after "
+        "canceling an audio recording"
+    )
+    textarea.type(long_text)
+    assert_snapshot(chat_input, name="st_chat_input-stacked_after_audio_cancel")
