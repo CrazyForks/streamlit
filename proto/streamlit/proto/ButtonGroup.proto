@@ -17,7 +17,7 @@
 syntax = "proto3";
 
 
-import "streamlit/proto/LabelVisibilityMessage.proto";
+import "streamlit/proto/LabelVisibility.proto";
 
 message ButtonGroup {
   enum ClickMode {
@@ -53,11 +53,9 @@ message ButtonGroup {
   Style style = 10;
 
   string label = 11;
-  LabelVisibilityMessage label_visibility = 12;
+  LabelVisibility label_visibility = 12;
   optional string help = 13;
 
   reserved 9;
-  reserved "selection_visualization";
-
   // next id: 14
 }
