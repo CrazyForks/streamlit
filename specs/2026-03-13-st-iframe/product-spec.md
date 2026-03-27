@@ -51,10 +51,10 @@ components.html("<p>Hello World</p>", height=100)
 **Related:**
 
 - [#4659](https://github.com/streamlit/streamlit/issues/4659) - Dynamic height for iframe/html
-  (25 👍) — Addressed by `height="content"` for HTML strings and local files
-- [#5632](https://github.com/streamlit/streamlit/issues/5632) - Scale iframe option (2 👍) —
+  — Addressed by `height="content"` for HTML strings and local files
+- [#5632](https://github.com/streamlit/streamlit/issues/5632) - Scale iframe option —
   Future consideration for thumbnail/preview use cases
-- [#6195](https://github.com/streamlit/streamlit/issues/6195) - Host folder as website (6 👍) —
+- [#6195](https://github.com/streamlit/streamlit/issues/6195) - Host folder as website —
   Addressed by Starlette integration in 1.53; can combine with `st.iframe` to preview
 
 ### Use Cases
@@ -64,8 +64,6 @@ components.html("<p>Hello World</p>", height=100)
 3. **Display PDFs**: Embed PDF documents in the app (note: `st.pdf` is preferred for PDF display)
 4. **Preview generated sites**: Show mkdocs/sphinx builds, static site previews
 5. **Isolated JavaScript**: Run JavaScript in a sandboxed environment
-
----
 
 ## Proposal
 
@@ -333,8 +331,6 @@ import streamlit as st
 st.iframe("/preview/index.html", height=800)
 ```
 
----
-
 ## Migration from `st.components.v1`
 
 Users can migrate with minimal changes:
@@ -354,8 +350,6 @@ st.iframe("<p>Hello</p>", height=100)
 **Deprecation plan:** With the introduction of `st.iframe`, the legacy `st.components.v1.iframe`
 and `st.components.v1.html` functions will begin a soft deprecation (log + docstring deprecation
 warning).
-
----
 
 ## Alternatives Considered
 
@@ -401,9 +395,6 @@ st.embed("<p>Hello</p>", height=100)
 **Decision:** `st.iframe` is preferred because it's technically precise, familiar to
 the target audience, and makes the migration path from `st.components.v1.iframe` obvious.
 However, `st.embed` could be considered as an alias if user feedback shows confusion.
-
-
----
 
 ## Out of Scope (Future Work)
 
@@ -591,8 +582,6 @@ st.iframe("https://trusted.com", sandbox=None)
 
 **Trade-off:** Exposes complexity; wrong settings can break functionality. Current
 permissive default works for most cases.
-
----
 
 ## Checklist
 
