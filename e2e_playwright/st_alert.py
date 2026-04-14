@@ -127,3 +127,14 @@ st.warning("🔔 This warning has an emoji icon extracted from body")
 
 # Test case with material icon extracted from body
 st.info(":material/lightbulb: This info has a material icon extracted from body")
+
+### Test cases for title parameter ###
+
+# Alerts with title
+st.success(
+    "This is the success body text.",
+    title="Success _Title_ :material/celebration:",
+)
+
+# Alert with title and icon
+st.info("Body with title and icon.", title="Notice", icon=":material/info:")
