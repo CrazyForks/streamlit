@@ -104,7 +104,13 @@ const SCROLLBAR_FALLBACK_SIZE_REM = "0.5rem"
 
 export interface DataFrameProps {
   element: DataframeProto
-  data: Quiver
+  elementHash?: string
+  /**
+   * Optional pre-constructed Quiver data. If provided, this is used directly
+   * instead of constructing from element.arrowData. This is primarily used by
+   * ReadOnlyGrid which already has a Quiver instance.
+   */
+  data?: Quiver
   disabled: boolean
   widgetMgr: WidgetStateManager | undefined
   disableFullscreenMode?: boolean
@@ -119,13 +125,14 @@ export interface DataFrameProps {
  * The main component used by dataframe & data_editor to render an editable table.
  *
  * @param element - The element's proto message
- * @param data - The Arrow data to render (extracted from the proto message)
+ * @param data - Optional pre-constructed Quiver data (for ReadOnlyGrid use case)
  * @param disabled - Whether the widget is disabled
  * @param widgetMgr - The widget manager
  */
 function DataFrame({
   element,
-  data,
+  elementHash,
+  data: dataProp,
   disabled,
   widgetMgr,
   disableFullscreenMode,
@@ -134,6 +141,21 @@ function DataFrame({
   widthConfig,
   heightConfig,
 }: Readonly<DataFrameProps>): ReactElement {
+  // Use provided Quiver data or construct from proto's arrowData. The
+  // elementHash serves as the primary memoization key to avoid unnecessary
+  // re-parsing when the payload hasn't changed.
+  const data = useMemo(() => {
+    if (dataProp !== undefined) {
+      return dataProp
+    }
+    if (!element.arrowData) {
+      throw new Error("DataFrame element is missing arrowData")
+    }
+    return new Quiver(element.arrowData)
+    // elementHash is intentionally included as a stability anchor for memoization
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataProp, elementHash, element.arrowData])
+
   const {
     expanded: isFullScreen,
     expand,
