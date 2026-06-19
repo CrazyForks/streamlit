@@ -58,10 +58,7 @@ export const StyledMenuOptionIcon = styled.span(({ theme }) => ({
 export const StyledMenuPopover = styled(Popover)(({ theme }) => ({
   ...getPopoverContainerStyle(theme),
   // Override default border-radius with xl to match the original design
-  borderTopLeftRadius: theme.radii.xl,
-  borderTopRightRadius: theme.radii.xl,
-  borderBottomRightRadius: theme.radii.xl,
-  borderBottomLeftRadius: theme.radii.xl,
+  borderRadius: theme.radii.xl,
   marginRight: theme.spacing.lg,
   marginBottom: theme.spacing.lg,
   maxHeight: "70vh",
@@ -97,10 +94,7 @@ export const StyledMenuListItem = styled(MenuItem)(({ theme }) => ({
   cursor: "pointer",
   listStyle: "none",
   minWidth: theme.sizes.minMenuWidth,
-  borderTopLeftRadius: theme.radii.md2,
-  borderTopRightRadius: theme.radii.md2,
-  borderBottomRightRadius: theme.radii.md2,
-  borderBottomLeftRadius: theme.radii.md2,
+  borderRadius: theme.radii.md2,
   outline: "none",
   transition: "background 50ms ease",
 
