@@ -1305,3 +1305,25 @@ class ParallelWorkerExternalContainerWriteTest(DeltaGeneratorTestCase):
             assert result is not None
         finally:
             ThreadState.update(is_parallel_worker=False, delta_path=())
+
+
+class CreatingFragmentIdDeepCopyTest(DeltaGeneratorTestCase):
+    """Deepcopy must preserve fragment-origin metadata so cached wrappers
+    can evict correctly after a container is copied during fragment reruns."""
+
+    def test_creating_fragment_id_survives_deepcopy(self) -> None:
+        """A container with _creating_fragment_id set keeps it through deepcopy."""
+        dg = DeltaGenerator(root_container=RootContainer.MAIN)
+        dg._creating_fragment_id = "my_fragment"
+
+        copied = deepcopy(dg)
+
+        assert copied._creating_fragment_id == "my_fragment"
+
+    def test_unset_creating_fragment_id_stays_none_through_deepcopy(self) -> None:
+        """A container with no creating fragment stays None through deepcopy."""
+        dg = DeltaGenerator(root_container=RootContainer.MAIN)
+
+        copied = deepcopy(dg)
+
+        assert copied._creating_fragment_id is None
